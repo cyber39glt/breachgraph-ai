@@ -1,0 +1,395 @@
+{
+  "metadata": {
+    "name": "Halcyon Payments (fictional)",
+    "description": "Synthetic cloud identity dataset for BreachGraph AI. Every person, account and resource here is invented. It does not describe any real company.",
+    "synthetic": true,
+    "schema_version": "1.0",
+    "account_id": "000000000000"
+  },
+  "users": [
+    {
+      "id": "user:jordan.reyes",
+      "name": "Jordan Reyes",
+      "title": "Contract DevOps Engineer",
+      "department": "Platform",
+      "external": true,
+      "mfa_enabled": false,
+      "last_login_days": 3,
+      "policies": []
+    },
+    {
+      "id": "user:priya.nair",
+      "name": "Priya Nair",
+      "title": "Senior Data Engineer",
+      "department": "Data",
+      "external": false,
+      "mfa_enabled": true,
+      "last_login_days": 1,
+      "policies": []
+    },
+    {
+      "id": "user:sam.okafor",
+      "name": "Sam Okafor",
+      "title": "Finance Analyst",
+      "department": "Finance",
+      "external": false,
+      "mfa_enabled": true,
+      "last_login_days": 2,
+      "policies": [
+        "policy:finance-reports-read"
+      ]
+    },
+    {
+      "id": "user:lena.fischer",
+      "name": "Lena Fischer",
+      "title": "Security Engineer",
+      "department": "Security",
+      "external": false,
+      "mfa_enabled": true,
+      "last_login_days": 0,
+      "policies": []
+    },
+    {
+      "id": "user:marco.bianchi",
+      "name": "Marco Bianchi",
+      "title": "Former Support Lead",
+      "department": "Support",
+      "external": false,
+      "mfa_enabled": false,
+      "last_login_days": 214,
+      "policies": []
+    },
+    {
+      "id": "user:ava.thompson",
+      "name": "Ava Thompson",
+      "title": "Frontend Engineer",
+      "department": "Product",
+      "external": false,
+      "mfa_enabled": true,
+      "last_login_days": 5,
+      "policies": []
+    }
+  ],
+  "groups": [
+    {
+      "id": "group:ci-maintainers",
+      "name": "CI Maintainers",
+      "members": [
+        "user:jordan.reyes",
+        "user:ava.thompson"
+      ],
+      "policies": [
+        "policy:ci-assume-deploy"
+      ]
+    },
+    {
+      "id": "group:data-engineering",
+      "name": "Data Engineering",
+      "members": [
+        "user:priya.nair"
+      ],
+      "policies": [
+        "policy:data-eng-assume"
+      ]
+    },
+    {
+      "id": "group:support-legacy",
+      "name": "Support (legacy)",
+      "members": [
+        "user:marco.bianchi"
+      ],
+      "policies": [
+        "policy:support-ticket-export"
+      ]
+    },
+    {
+      "id": "group:security-auditors",
+      "name": "Security Auditors",
+      "members": [
+        "user:lena.fischer"
+      ],
+      "policies": [
+        "policy:security-audit-read"
+      ]
+    }
+  ],
+  "roles": [
+    {
+      "id": "role:ci-deploy",
+      "name": "ci-deploy",
+      "description": "Assumed by CI pipelines to deploy application stacks.",
+      "trusted_principals": [
+        "account:*"
+      ],
+      "policies": [
+        "policy:ci-deploy-permissions"
+      ]
+    },
+    {
+      "id": "role:data-platform-admin",
+      "name": "data-platform-admin",
+      "description": "Break-glass administration for the data platform.",
+      "trusted_principals": [
+        "account:*"
+      ],
+      "policies": [
+        "policy:data-platform-full"
+      ]
+    },
+    {
+      "id": "role:analytics-reader",
+      "name": "analytics-reader",
+      "description": "Read access to the de-identified analytics warehouse.",
+      "trusted_principals": [
+        "account:*"
+      ],
+      "policies": [
+        "policy:analytics-read"
+      ]
+    }
+  ],
+  "policies": [
+    {
+      "id": "policy:ci-assume-deploy",
+      "name": "ci-assume-deploy",
+      "statements": [
+        {
+          "sid": "AssumeDeployRole",
+          "effect": "Allow",
+          "actions": [
+            "sts:AssumeRole"
+          ],
+          "resources": [
+            "role:ci-deploy"
+          ],
+          "last_used_days": 1
+        }
+      ]
+    },
+    {
+      "id": "policy:ci-deploy-permissions",
+      "name": "ci-deploy-permissions",
+      "statements": [
+        {
+          "sid": "DeployArtifacts",
+          "effect": "Allow",
+          "actions": [
+            "s3:PutObject",
+            "s3:GetObject"
+          ],
+          "resources": [
+            "res:s3-build-artifacts"
+          ],
+          "last_used_days": 1
+        },
+        {
+          "sid": "AssumeAnyRole",
+          "effect": "Allow",
+          "actions": [
+            "sts:AssumeRole"
+          ],
+          "resources": [
+            "*"
+          ],
+          "last_used_days": 140
+        }
+      ]
+    },
+    {
+      "id": "policy:data-platform-full",
+      "name": "data-platform-full",
+      "statements": [
+        {
+          "sid": "FullS3",
+          "effect": "Allow",
+          "actions": [
+            "s3:*"
+          ],
+          "resources": [
+            "res:s3-customer-pii",
+            "res:s3-analytics-warehouse"
+          ],
+          "last_used_days": 30
+        },
+        {
+          "sid": "DecryptPii",
+          "effect": "Allow",
+          "actions": [
+            "kms:Decrypt"
+          ],
+          "resources": [
+            "res:kms-pii-key"
+          ],
+          "last_used_days": 30
+        }
+      ]
+    },
+    {
+      "id": "policy:data-eng-assume",
+      "name": "data-eng-assume",
+      "statements": [
+        {
+          "sid": "AssumeAnalyticsReader",
+          "effect": "Allow",
+          "actions": [
+            "sts:AssumeRole"
+          ],
+          "resources": [
+            "role:analytics-reader"
+          ],
+          "last_used_days": 1
+        }
+      ]
+    },
+    {
+      "id": "policy:analytics-read",
+      "name": "analytics-read",
+      "statements": [
+        {
+          "sid": "ReadWarehouse",
+          "effect": "Allow",
+          "actions": [
+            "s3:GetObject",
+            "s3:ListBucket"
+          ],
+          "resources": [
+            "res:s3-analytics-warehouse"
+          ],
+          "last_used_days": 1
+        }
+      ]
+    },
+    {
+      "id": "policy:finance-reports-read",
+      "name": "finance-reports-read",
+      "statements": [
+        {
+          "sid": "ReadFinanceReports",
+          "effect": "Allow",
+          "actions": [
+            "s3:GetObject"
+          ],
+          "resources": [
+            "res:s3-finance-reports"
+          ],
+          "last_used_days": 2
+        }
+      ]
+    },
+    {
+      "id": "policy:support-ticket-export",
+      "name": "support-ticket-export",
+      "statements": [
+        {
+          "sid": "ExportTickets",
+          "effect": "Allow",
+          "actions": [
+            "dynamodb:Scan",
+            "dynamodb:Query"
+          ],
+          "resources": [
+            "res:ddb-support-tickets"
+          ],
+          "last_used_days": 220
+        },
+        {
+          "sid": "ReadPaymentsDb",
+          "effect": "Allow",
+          "actions": [
+            "rds:*"
+          ],
+          "resources": [
+            "res:rds-payments"
+          ],
+          "last_used_days": null
+        }
+      ]
+    },
+    {
+      "id": "policy:security-audit-read",
+      "name": "security-audit-read",
+      "statements": [
+        {
+          "sid": "ReadAuditLogs",
+          "effect": "Allow",
+          "actions": [
+            "s3:GetObject",
+            "s3:ListBucket"
+          ],
+          "resources": [
+            "res:s3-*"
+          ],
+          "last_used_days": 0
+        },
+        {
+          "sid": "NoPiiAccess",
+          "effect": "Deny",
+          "actions": [
+            "s3:*"
+          ],
+          "resources": [
+            "res:s3-customer-pii"
+          ]
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "id": "res:s3-customer-pii",
+      "name": "customer-pii",
+      "type": "S3 bucket",
+      "sensitivity": "critical",
+      "data_classification": "Cardholder names, addresses, partial PANs (synthetic)"
+    },
+    {
+      "id": "res:kms-pii-key",
+      "name": "pii-encryption-key",
+      "type": "KMS key",
+      "sensitivity": "critical",
+      "data_classification": "Encrypts the customer-pii bucket"
+    },
+    {
+      "id": "res:rds-payments",
+      "name": "payments-ledger",
+      "type": "RDS database",
+      "sensitivity": "critical",
+      "data_classification": "Payment transactions (synthetic)"
+    },
+    {
+      "id": "res:s3-finance-reports",
+      "name": "finance-reports",
+      "type": "S3 bucket",
+      "sensitivity": "high",
+      "data_classification": "Quarterly financial statements (synthetic)"
+    },
+    {
+      "id": "res:ddb-support-tickets",
+      "name": "support-tickets",
+      "type": "DynamoDB table",
+      "sensitivity": "high",
+      "data_classification": "Customer support conversations (synthetic)"
+    },
+    {
+      "id": "res:s3-analytics-warehouse",
+      "name": "analytics-warehouse",
+      "type": "S3 bucket",
+      "sensitivity": "medium",
+      "data_classification": "De-identified aggregates"
+    },
+    {
+      "id": "res:s3-audit-logs",
+      "name": "audit-logs",
+      "type": "S3 bucket",
+      "sensitivity": "high",
+      "data_classification": "Security audit trail"
+    },
+    {
+      "id": "res:s3-build-artifacts",
+      "name": "build-artifacts",
+      "type": "S3 bucket",
+      "sensitivity": "low",
+      "data_classification": "Compiled application builds"
+    }
+  ]
+}

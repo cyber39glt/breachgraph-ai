@@ -1,0 +1,7 @@
+[
+  {
+    "op": "remove_statement",
+    "policy": "policy:ci-deploy-permissions",
+    "sid": "AssumeAnyRole"
+  }
+]
