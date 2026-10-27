@@ -394,9 +394,22 @@ class Analyzer:
         for r in access:
             for h in r["hops"]:
                 k = (h["source"], h["target"], h["relation"])
-                if k not in edges or ACCESS_RANK.get(h.get("level"), 0) > ACCESS_RANK.get(edges[k].get("level"), 0):
-                    edges[k] = {"source": h["source"], "target": h["target"], "relation": h["relation"],
-                                **({"level": h["level"]} if "level" in h else {})}
+                edge = edges.setdefault(k, {"source": h["source"], "target": h["target"],
+                                            "relation": h["relation"], "grants": []})
+                if ACCESS_RANK.get(h.get("level"), 0) > ACCESS_RANK.get(edge.get("level"), 0):
+                    edge["level"] = h["level"]
+                grant = h["evidence"].get("grant")
+                if grant:
+                    # The exact statements behind this edge, so the UI can show the evidence.
+                    ref = {"policy": grant["policy"], "sid": grant["sid"],
+                           "action": h["evidence"].get("action", ASSUME_ROLE)}
+                    if ref not in edge["grants"]:
+                        edge["grants"].append(ref)
+                if "trust" in h["evidence"]:
+                    edge["trust"] = h["evidence"]["trust"]
+        for edge in edges.values():
+            edge.setdefault("grants", [])
+            edge["id"] = f"{edge['source']}|{edge['relation']}|{edge['target']}"
         return {"nodes": nodes, "edges": sorted(edges.values(), key=lambda e: (e["source"], e["target"]))}
 
 
