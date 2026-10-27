@@ -1,0 +1,100 @@
+/*
+ * GreenLanTech design tokens for BreachGraph AI.
+ *
+ * Brand colours were sampled from GreenLanTech's published carousel artwork:
+ * forest #0B3D2E (dark surface), lime #B7FF3D (accent), paper #F4F7F4 (light
+ * surface), charcoal #111916 (terminal / code), and the supporting greys.
+ * Every colour used in the app comes from this file.
+ */
+:root {
+  /* Brand */
+  --glt-forest: #0b3d2e;
+  --glt-forest-deep: #082f23;
+  --glt-forest-raised: #0f4636;
+  --glt-forest-chip: #235141;
+  --glt-forest-rule: #295b4d;
+  --glt-lime: #b7ff3d;
+  --glt-lime-press: #a3ec2a;
+  --glt-paper: #f4f7f4;
+  --glt-white: #ffffff;
+  --glt-charcoal: #111916;
+  --glt-charcoal-rule: #3e4a46;
+  --code-text: #e6eeea;
+
+  /* Text */
+  --ink: #131814;            /* body text on paper */
+  --ink-muted: #3a4640;      /* secondary text on paper */
+  --ink-subtle: #5d6b64;     /* captions on paper (AA on paper and white) */
+  --on-dark: #f6fbf9;        /* headings on forest */
+  --on-dark-muted: #c5d8d2;  /* body text on forest */
+  --on-dark-subtle: #9fb8b0; /* captions on forest */
+
+  /* Lines and surfaces */
+  --rule: #d0d3d0;
+  --rule-soft: #e3e7e3;
+  --surface: #ffffff;
+  --surface-sunken: #eaefea;
+
+  /* Severity on light surfaces: text colour + tint */
+  --sev-critical: #b42318;
+  --sev-critical-tint: #fdecea;
+  --sev-high: #b54708;
+  --sev-high-tint: #fdf0e3;
+  --sev-medium: #855f00;
+  --sev-medium-tint: #fbf3d9;
+  --sev-medium-bar: #c9a227;
+  --sev-medium-rule: #d9b440;
+  --sev-low: #4b5a53;
+  --sev-low-tint: #e8eeea;
+
+  /* Severity and path colours on forest (graph canvas) */
+  --graph-path: #ff7a6b;
+  --graph-critical: #ff7a6b;
+  --graph-high: #ffb067;
+  --graph-medium: #f2d16b;
+  --graph-low: #c5d8d2;
+
+  /* Verified-safe uses the brand lime: on forest as-is, on paper as a dark tint */
+  --safe-ink: #2f5d00;
+  --safe-tint: #ecfccb;
+
+  /* AI content is set apart by a dashed rule and an explicit label, not by a new hue */
+  --ai-ink: #3a4640;
+  --ai-tint: #fafbf3;
+  --ai-rule: #8aa69c;
+
+  /* Typography */
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.875rem;
+  --text-3xl: 2.5rem;
+  --tracking-eyebrow: 0.14em;
+
+  /* Spacing: 4px grid */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-12: 48px;
+
+  /* Shape and depth (brand uses generous rounded rectangles, no heavy shadows) */
+  --radius-sm: 6px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --shadow: 0 1px 2px rgba(11, 61, 46, 0.06), 0 4px 16px rgba(11, 61, 46, 0.05);
+
+  --sidebar-w: 248px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --focus: 0 0 0 3px var(--glt-lime), 0 0 0 5px var(--glt-forest);
+}

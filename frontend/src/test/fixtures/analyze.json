@@ -1,0 +1,1654 @@
+{
+ "dataset": {
+  "name": "Halcyon Payments (fictional)",
+  "description": "Synthetic cloud identity dataset for BreachGraph AI. Every person, account and resource here is invented. It does not describe any real company.",
+  "synthetic": true,
+  "schema_version": "1.0",
+  "account_id": "000000000000"
+ },
+ "summary": {
+  "identities": 6,
+  "roles": 3,
+  "resources": 8,
+  "sensitive_resources": 6,
+  "attack_paths": 6,
+  "findings_by_severity": {
+   "critical": 4,
+   "high": 5,
+   "medium": 4,
+   "low": 0
+  }
+ },
+ "findings": [
+  {
+   "id": "PATH-9B77622F",
+   "key": "user:jordan.reyes->res:s3-customer-pii",
+   "type": "attack_path",
+   "severity": "critical",
+   "score": 100,
+   "score_breakdown": [
+    {
+     "factor": "sensitivity",
+     "label": "Critical resource",
+     "points": 60
+    },
+    {
+     "factor": "access",
+     "label": "Admin access",
+     "points": 20
+    },
+    {
+     "factor": "no_mfa",
+     "label": "Identity has no MFA",
+     "points": 10
+    },
+    {
+     "factor": "external",
+     "label": "External / contractor identity",
+     "points": 8
+    },
+    {
+     "factor": "role_chain",
+     "label": "Reached through assumed roles (privilege escalation)",
+     "points": 5
+    }
+   ],
+   "title": "Jordan Reyes can gain admin access to customer-pii",
+   "entry": "user:jordan.reyes",
+   "target": "res:s3-customer-pii",
+   "level": "admin",
+   "roles": [
+    "role:ci-deploy",
+    "role:data-platform-admin"
+   ],
+   "path": [
+    "user:jordan.reyes",
+    "group:ci-maintainers",
+    "role:ci-deploy",
+    "role:data-platform-admin",
+    "res:s3-customer-pii"
+   ],
+   "hops": [
+    {
+     "source": "user:jordan.reyes",
+     "target": "group:ci-maintainers",
+     "relation": "member_of",
+     "detail": "Jordan Reyes is a member of group CI Maintainers.",
+     "evidence": {
+      "group": "group:ci-maintainers"
+     }
+    },
+    {
+     "source": "group:ci-maintainers",
+     "target": "role:ci-deploy",
+     "relation": "can_assume",
+     "detail": "Policy ci-assume-deploy (statement AssumeDeployRole) allows sts:AssumeRole on role:ci-deploy, and role ci-deploy trusts the whole account, so Jordan Reyes can assume it.",
+     "evidence": {
+      "trust": "account:*",
+      "grant": {
+       "holder": "group:ci-maintainers",
+       "policy": "policy:ci-assume-deploy",
+       "sid": "AssumeDeployRole",
+       "effect": "Allow",
+       "actions": [
+        "sts:AssumeRole"
+       ],
+       "resources": [
+        "role:ci-deploy"
+       ]
+      }
+     }
+    },
+    {
+     "source": "role:ci-deploy",
+     "target": "role:data-platform-admin",
+     "relation": "can_assume",
+     "detail": "Policy ci-deploy-permissions (statement AssumeAnyRole) allows sts:AssumeRole on *, and role data-platform-admin trusts the whole account, so ci-deploy can assume it.",
+     "evidence": {
+      "trust": "account:*",
+      "grant": {
+       "holder": "role:ci-deploy",
+       "policy": "policy:ci-deploy-permissions",
+       "sid": "AssumeAnyRole",
+       "effect": "Allow",
+       "actions": [
+        "sts:AssumeRole"
+       ],
+       "resources": [
+        "*"
+       ]
+      }
+     }
+    },
+    {
+     "source": "role:data-platform-admin",
+     "target": "res:s3-customer-pii",
+     "relation": "access",
+     "level": "admin",
+     "detail": "Policy data-platform-full (statement FullS3) allows s3:* on res:s3-customer-pii, res:s3-analytics-warehouse, which gives admin access to customer-pii.",
+     "evidence": {
+      "grant": {
+       "holder": "role:data-platform-admin",
+       "policy": "policy:data-platform-full",
+       "sid": "FullS3",
+       "effect": "Allow",
+       "actions": [
+        "s3:*"
+       ],
+       "resources": [
+        "res:s3-customer-pii",
+        "res:s3-analytics-warehouse"
+       ]
+      },
+      "action": "s3:*"
+     }
+    }
+   ],
+   "facts": [
+    "Jordan Reyes is a member of group CI Maintainers.",
+    "Policy ci-assume-deploy (statement AssumeDeployRole) allows sts:AssumeRole on role:ci-deploy, and role ci-deploy trusts the whole account, so Jordan Reyes can assume it.",
+    "Policy ci-deploy-permissions (statement AssumeAnyRole) allows sts:AssumeRole on *, and role data-platform-admin trusts the whole account, so ci-deploy can assume it.",
+    "Policy data-platform-full (statement FullS3) allows s3:* on res:s3-customer-pii, res:s3-analytics-warehouse, which gives admin access to customer-pii."
+   ]
+  },
+  {
+   "id": "PATH-40520F63",
+   "key": "user:marco.bianchi->res:rds-payments",
+   "type": "attack_path",
+   "severity": "critical",
+   "score": 97,
+   "score_breakdown": [
+    {
+     "factor": "sensitivity",
+     "label": "Critical resource",
+     "points": 60
+    },
+    {
+     "factor": "access",
+     "label": "Admin access",
+     "points": 20
+    },
+    {
+     "factor": "no_mfa",
+     "label": "Identity has no MFA",
+     "points": 10
+    },
+    {
+     "factor": "stale",
+     "label": "Inactive for more than 90 days",
+     "points": 7
+    }
+   ],
+   "title": "Marco Bianchi can gain admin access to payments-ledger",
+   "entry": "user:marco.bianchi",
+   "target": "res:rds-payments",
+   "level": "admin",
+   "roles": [],
+   "path": [
+    "user:marco.bianchi",
+    "group:support-legacy",
+    "res:rds-payments"
+   ],
+   "hops": [
+    {
+     "source": "user:marco.bianchi",
+     "target": "group:support-legacy",
+     "relation": "member_of",
+     "detail": "Marco Bianchi is a member of group Support (legacy).",
+     "evidence": {
+      "group": "group:support-legacy"
+     }
+    },
+    {
+     "source": "group:support-legacy",
+     "target": "res:rds-payments",
+     "relation": "access",
+     "level": "admin",
+     "detail": "Policy support-ticket-export (statement ReadPaymentsDb) allows rds:* on res:rds-payments, which gives admin access to payments-ledger.",
+     "evidence": {
+      "grant": {
+       "holder": "group:support-legacy",
+       "policy": "policy:support-ticket-export",
+       "sid": "ReadPaymentsDb",
+       "effect": "Allow",
+       "actions": [
+        "rds:*"
+       ],
+       "resources": [
+        "res:rds-payments"
+       ]
+      },
+      "action": "rds:*"
+     }
+    }
+   ],
+   "facts": [
+    "Marco Bianchi is a member of group Support (legacy).",
+    "Policy support-ticket-export (statement ReadPaymentsDb) allows rds:* on res:rds-payments, which gives admin access to payments-ledger."
+   ]
+  },
+  {
+   "id": "PATH-5BB5B4A8",
+   "key": "user:jordan.reyes->res:kms-pii-key",
+   "type": "attack_path",
+   "severity": "critical",
+   "score": 91,
+   "score_breakdown": [
+    {
+     "factor": "sensitivity",
+     "label": "Critical resource",
+     "points": 60
+    },
+    {
+     "factor": "access",
+     "label": "Read access",
+     "points": 8
+    },
+    {
+     "factor": "no_mfa",
+     "label": "Identity has no MFA",
+     "points": 10
+    },
+    {
+     "factor": "external",
+     "label": "External / contractor identity",
+     "points": 8
+    },
+    {
+     "factor": "role_chain",
+     "label": "Reached through assumed roles (privilege escalation)",
+     "points": 5
+    }
+   ],
+   "title": "Jordan Reyes can gain read access to pii-encryption-key",
+   "entry": "user:jordan.reyes",
+   "target": "res:kms-pii-key",
+   "level": "read",
+   "roles": [
+    "role:ci-deploy",
+    "role:data-platform-admin"
+   ],
+   "path": [
+    "user:jordan.reyes",
+    "group:ci-maintainers",
+    "role:ci-deploy",
+    "role:data-platform-admin",
+    "res:kms-pii-key"
+   ],
+   "hops": [
+    {
+     "source": "user:jordan.reyes",
+     "target": "group:ci-maintainers",
+     "relation": "member_of",
+     "detail": "Jordan Reyes is a member of group CI Maintainers.",
+     "evidence": {
+      "group": "group:ci-maintainers"
+     }
+    },
+    {
+     "source": "group:ci-maintainers",
+     "target": "role:ci-deploy",
+     "relation": "can_assume",
+     "detail": "Policy ci-assume-deploy (statement AssumeDeployRole) allows sts:AssumeRole on role:ci-deploy, and role ci-deploy trusts the whole account, so Jordan Reyes can assume it.",
+     "evidence": {
+      "trust": "account:*",
+      "grant": {
+       "holder": "group:ci-maintainers",
+       "policy": "policy:ci-assume-deploy",
+       "sid": "AssumeDeployRole",
+       "effect": "Allow",
+       "actions": [
+        "sts:AssumeRole"
+       ],
+       "resources": [
+        "role:ci-deploy"
+       ]
+      }
+     }
+    },
+    {
+     "source": "role:ci-deploy",
+     "target": "role:data-platform-admin",
+     "relation": "can_assume",
+     "detail": "Policy ci-deploy-permissions (statement AssumeAnyRole) allows sts:AssumeRole on *, and role data-platform-admin trusts the whole account, so ci-deploy can assume it.",
+     "evidence": {
+      "trust": "account:*",
+      "grant": {
+       "holder": "role:ci-deploy",
+       "policy": "policy:ci-deploy-permissions",
+       "sid": "AssumeAnyRole",
+       "effect": "Allow",
+       "actions": [
+        "sts:AssumeRole"
+       ],
+       "resources": [
+        "*"
+       ]
+      }
+     }
+    },
+    {
+     "source": "role:data-platform-admin",
+     "target": "res:kms-pii-key",
+     "relation": "access",
+     "level": "read",
+     "detail": "Policy data-platform-full (statement DecryptPii) allows kms:Decrypt on res:kms-pii-key, which gives read access to pii-encryption-key.",
+     "evidence": {
+      "grant": {
+       "holder": "role:data-platform-admin",
+       "policy": "policy:data-platform-full",
+       "sid": "DecryptPii",
+       "effect": "Allow",
+       "actions": [
+        "kms:Decrypt"
+       ],
+       "resources": [
+        "res:kms-pii-key"
+       ]
+      },
+      "action": "kms:Decrypt"
+     }
+    }
+   ],
+   "facts": [
+    "Jordan Reyes is a member of group CI Maintainers.",
+    "Policy ci-assume-deploy (statement AssumeDeployRole) allows sts:AssumeRole on role:ci-deploy, and role ci-deploy trusts the whole account, so Jordan Reyes can assume it.",
+    "Policy ci-deploy-permissions (statement AssumeAnyRole) allows sts:AssumeRole on *, and role data-platform-admin trusts the whole account, so ci-deploy can assume it.",
+    "Policy data-platform-full (statement DecryptPii) allows kms:Decrypt on res:kms-pii-key, which gives read access to pii-encryption-key."
+   ]
+  },
+  {
+   "id": "PATH-F9695166",
+   "key": "user:ava.thompson->res:s3-customer-pii",
+   "type": "attack_path",
+   "severity": "critical",
+   "score": 85,
+   "score_breakdown": [
+    {
+     "factor": "sensitivity",
+     "label": "Critical resource",
+     "points": 60
+    },
+    {
+     "factor": "access",
+     "label": "Admin access",
+     "points": 20
+    },
+    {
+     "factor": "role_chain",
+     "label": "Reached through assumed roles (privilege escalation)",
+     "points": 5
+    }
+   ],
+   "title": "Ava Thompson can gain admin access to customer-pii",
+   "entry": "user:ava.thompson",
+   "target": "res:s3-customer-pii",
+   "level": "admin",
+   "roles": [
+    "role:ci-deploy",
+    "role:data-platform-admin"
+   ],
+   "path": [
+    "user:ava.thompson",
+    "group:ci-maintainers",
+    "role:ci-deploy",
+    "role:data-platform-admin",
+    "res:s3-customer-pii"
+   ],
+   "hops": [
+    {
+     "source": "user:ava.thompson",
+     "target": "group:ci-maintainers",
+     "relation": "member_of",
+     "detail": "Ava Thompson is a member of group CI Maintainers.",
+     "evidence": {
+      "group": "group:ci-maintainers"
+     }
+    },
+    {
+     "source": "group:ci-maintainers",
+     "target": "role:ci-deploy",
+     "relation": "can_assume",
+     "detail": "Policy ci-assume-deploy (statement AssumeDeployRole) allows sts:AssumeRole on role:ci-deploy, and role ci-deploy trusts the whole account, so Ava Thompson can assume it.",
+     "evidence": {
+      "trust": "account:*",
+      "grant": {
+       "holder": "group:ci-maintainers",
+       "policy": "policy:ci-assume-deploy",
+       "sid": "AssumeDeployRole",
+       "effect": "Allow",
+       "actions": [
+        "sts:AssumeRole"
+       ],
+       "resources": [
+        "role:ci-deploy"
+       ]
+      }
+     }
+    },
+    {
+     "source": "role:ci-deploy",
+     "target": "role:data-platform-admin",
+     "relation": "can_assume",
+     "detail": "Policy ci-deploy-permissions (statement AssumeAnyRole) allows sts:AssumeRole on *, and role data-platform-admin trusts the whole account, so ci-deploy can assume it.",
+     "evidence": {
+      "trust": "account:*",
+      "grant": {
+       "holder": "role:ci-deploy",
+       "policy": "policy:ci-deploy-permissions",
+       "sid": "AssumeAnyRole",
+       "effect": "Allow",
+       "actions": [
+        "sts:AssumeRole"
+       ],
+       "resources": [
+        "*"
+       ]
+      }
+     }
+    },
+    {
+     "source": "role:data-platform-admin",
+     "target": "res:s3-customer-pii",
+     "relation": "access",
+     "level": "admin",
+     "detail": "Policy data-platform-full (statement FullS3) allows s3:* on res:s3-customer-pii, res:s3-analytics-warehouse, which gives admin access to customer-pii.",
+     "evidence": {
+      "grant": {
+       "holder": "role:data-platform-admin",
+       "policy": "policy:data-platform-full",
+       "sid": "FullS3",
+       "effect": "Allow",
+       "actions": [
+        "s3:*"
+       ],
+       "resources": [
+        "res:s3-customer-pii",
+        "res:s3-analytics-warehouse"
+       ]
+      },
+      "action": "s3:*"
+     }
+    }
+   ],
+   "facts": [
+    "Ava Thompson is a member of group CI Maintainers.",
+    "Policy ci-assume-deploy (statement AssumeDeployRole) allows sts:AssumeRole on role:ci-deploy, and role ci-deploy trusts the whole account, so Ava Thompson can assume it.",
+    "Policy ci-deploy-permissions (statement AssumeAnyRole) allows sts:AssumeRole on *, and role data-platform-admin trusts the whole account, so ci-deploy can assume it.",
+    "Policy data-platform-full (statement FullS3) allows s3:* on res:s3-customer-pii, res:s3-analytics-warehouse, which gives admin access to customer-pii."
+   ]
+  },
+  {
+   "id": "PATH-437AF20B",
+   "key": "user:ava.thompson->res:kms-pii-key",
+   "type": "attack_path",
+   "severity": "high",
+   "score": 73,
+   "score_breakdown": [
+    {
+     "factor": "sensitivity",
+     "label": "Critical resource",
+     "points": 60
+    },
+    {
+     "factor": "access",
+     "label": "Read access",
+     "points": 8
+    },
+    {
+     "factor": "role_chain",
+     "label": "Reached through assumed roles (privilege escalation)",
+     "points": 5
+    }
+   ],
+   "title": "Ava Thompson can gain read access to pii-encryption-key",
+   "entry": "user:ava.thompson",
+   "target": "res:kms-pii-key",
+   "level": "read",
+   "roles": [
+    "role:ci-deploy",
+    "role:data-platform-admin"
+   ],
+   "path": [
+    "user:ava.thompson",
+    "group:ci-maintainers",
+    "role:ci-deploy",
+    "role:data-platform-admin",
+    "res:kms-pii-key"
+   ],
+   "hops": [
+    {
+     "source": "user:ava.thompson",
+     "target": "group:ci-maintainers",
+     "relation": "member_of",
+     "detail": "Ava Thompson is a member of group CI Maintainers.",
+     "evidence": {
+      "group": "group:ci-maintainers"
+     }
+    },
+    {
+     "source": "group:ci-maintainers",
+     "target": "role:ci-deploy",
+     "relation": "can_assume",
+     "detail": "Policy ci-assume-deploy (statement AssumeDeployRole) allows sts:AssumeRole on role:ci-deploy, and role ci-deploy trusts the whole account, so Ava Thompson can assume it.",
+     "evidence": {
+      "trust": "account:*",
+      "grant": {
+       "holder": "group:ci-maintainers",
+       "policy": "policy:ci-assume-deploy",
+       "sid": "AssumeDeployRole",
+       "effect": "Allow",
+       "actions": [
+        "sts:AssumeRole"
+       ],
+       "resources": [
+        "role:ci-deploy"
+       ]
+      }
+     }
+    },
+    {
+     "source": "role:ci-deploy",
+     "target": "role:data-platform-admin",
+     "relation": "can_assume",
+     "detail": "Policy ci-deploy-permissions (statement AssumeAnyRole) allows sts:AssumeRole on *, and role data-platform-admin trusts the whole account, so ci-deploy can assume it.",
+     "evidence": {
+      "trust": "account:*",
+      "grant": {
+       "holder": "role:ci-deploy",
+       "policy": "policy:ci-deploy-permissions",
+       "sid": "AssumeAnyRole",
+       "effect": "Allow",
+       "actions": [
+        "sts:AssumeRole"
+       ],
+       "resources": [
+        "*"
+       ]
+      }
+     }
+    },
+    {
+     "source": "role:data-platform-admin",
+     "target": "res:kms-pii-key",
+     "relation": "access",
+     "level": "read",
+     "detail": "Policy data-platform-full (statement DecryptPii) allows kms:Decrypt on res:kms-pii-key, which gives read access to pii-encryption-key.",
+     "evidence": {
+      "grant": {
+       "holder": "role:data-platform-admin",
+       "policy": "policy:data-platform-full",
+       "sid": "DecryptPii",
+       "effect": "Allow",
+       "actions": [
+        "kms:Decrypt"
+       ],
+       "resources": [
+        "res:kms-pii-key"
+       ]
+      },
+      "action": "kms:Decrypt"
+     }
+    }
+   ],
+   "facts": [
+    "Ava Thompson is a member of group CI Maintainers.",
+    "Policy ci-assume-deploy (statement AssumeDeployRole) allows sts:AssumeRole on role:ci-deploy, and role ci-deploy trusts the whole account, so Ava Thompson can assume it.",
+    "Policy ci-deploy-permissions (statement AssumeAnyRole) allows sts:AssumeRole on *, and role data-platform-admin trusts the whole account, so ci-deploy can assume it.",
+    "Policy data-platform-full (statement DecryptPii) allows kms:Decrypt on res:kms-pii-key, which gives read access to pii-encryption-key."
+   ]
+  },
+  {
+   "id": "PATH-8C8CB507",
+   "key": "user:marco.bianchi->res:ddb-support-tickets",
+   "type": "attack_path",
+   "severity": "high",
+   "score": 70,
+   "score_breakdown": [
+    {
+     "factor": "sensitivity",
+     "label": "High resource",
+     "points": 45
+    },
+    {
+     "factor": "access",
+     "label": "Read access",
+     "points": 8
+    },
+    {
+     "factor": "no_mfa",
+     "label": "Identity has no MFA",
+     "points": 10
+    },
+    {
+     "factor": "stale",
+     "label": "Inactive for more than 90 days",
+     "points": 7
+    }
+   ],
+   "title": "Marco Bianchi can gain read access to support-tickets",
+   "entry": "user:marco.bianchi",
+   "target": "res:ddb-support-tickets",
+   "level": "read",
+   "roles": [],
+   "path": [
+    "user:marco.bianchi",
+    "group:support-legacy",
+    "res:ddb-support-tickets"
+   ],
+   "hops": [
+    {
+     "source": "user:marco.bianchi",
+     "target": "group:support-legacy",
+     "relation": "member_of",
+     "detail": "Marco Bianchi is a member of group Support (legacy).",
+     "evidence": {
+      "group": "group:support-legacy"
+     }
+    },
+    {
+     "source": "group:support-legacy",
+     "target": "res:ddb-support-tickets",
+     "relation": "access",
+     "level": "read",
+     "detail": "Policy support-ticket-export (statement ExportTickets) allows dynamodb:Scan on res:ddb-support-tickets, which gives read access to support-tickets.",
+     "evidence": {
+      "grant": {
+       "holder": "group:support-legacy",
+       "policy": "policy:support-ticket-export",
+       "sid": "ExportTickets",
+       "effect": "Allow",
+       "actions": [
+        "dynamodb:Scan",
+        "dynamodb:Query"
+       ],
+       "resources": [
+        "res:ddb-support-tickets"
+       ]
+      },
+      "action": "dynamodb:Scan"
+     }
+    }
+   ],
+   "facts": [
+    "Marco Bianchi is a member of group Support (legacy).",
+    "Policy support-ticket-export (statement ExportTickets) allows dynamodb:Scan on res:ddb-support-tickets, which gives read access to support-tickets."
+   ]
+  },
+  {
+   "policy": "policy:support-ticket-export",
+   "sid": "ReadPaymentsDb",
+   "holders": [
+    "group:support-legacy"
+   ],
+   "statement": {
+    "sid": "ReadPaymentsDb",
+    "effect": "Allow",
+    "actions": [
+     "rds:*"
+    ],
+    "resources": [
+     "res:rds-payments"
+    ],
+    "last_used_days": null
+   },
+   "related_findings": [
+    "PATH-40520F63"
+   ],
+   "id": "WILD-0D2FBC4D",
+   "key": "wildcard:policy:support-ticket-export:ReadPaymentsDb",
+   "type": "wildcard_permission",
+   "severity": "high",
+   "title": "Wildcard actions rds:* in support-ticket-export / ReadPaymentsDb",
+   "facts": [
+    "Statement ReadPaymentsDb in policy support-ticket-export allows rds:* on res:rds-payments."
+   ]
+  },
+  {
+   "policy": "policy:data-platform-full",
+   "sid": "FullS3",
+   "holders": [
+    "role:data-platform-admin"
+   ],
+   "statement": {
+    "sid": "FullS3",
+    "effect": "Allow",
+    "actions": [
+     "s3:*"
+    ],
+    "resources": [
+     "res:s3-customer-pii",
+     "res:s3-analytics-warehouse"
+    ],
+    "last_used_days": 30
+   },
+   "related_findings": [
+    "PATH-9B77622F",
+    "PATH-F9695166"
+   ],
+   "id": "WILD-7999BAA2",
+   "key": "wildcard:policy:data-platform-full:FullS3",
+   "type": "wildcard_permission",
+   "severity": "high",
+   "title": "Wildcard actions s3:* in data-platform-full / FullS3",
+   "facts": [
+    "Statement FullS3 in policy data-platform-full allows s3:* on res:s3-customer-pii, res:s3-analytics-warehouse."
+   ]
+  },
+  {
+   "policy": "policy:ci-deploy-permissions",
+   "sid": "AssumeAnyRole",
+   "holders": [
+    "role:ci-deploy"
+   ],
+   "statement": {
+    "sid": "AssumeAnyRole",
+    "effect": "Allow",
+    "actions": [
+     "sts:AssumeRole"
+    ],
+    "resources": [
+     "*"
+    ],
+    "last_used_days": 140
+   },
+   "related_findings": [
+    "PATH-437AF20B",
+    "PATH-5BB5B4A8",
+    "PATH-9B77622F",
+    "PATH-F9695166"
+   ],
+   "id": "WILD-890DCDC6",
+   "key": "wildcard:policy:ci-deploy-permissions:AssumeAnyRole",
+   "type": "wildcard_permission",
+   "severity": "high",
+   "title": "Wildcard resources * in ci-deploy-permissions / AssumeAnyRole",
+   "facts": [
+    "Statement AssumeAnyRole in policy ci-deploy-permissions allows sts:AssumeRole on *."
+   ]
+  },
+  {
+   "policy": "policy:support-ticket-export",
+   "sid": "ExportTickets",
+   "holders": [
+    "group:support-legacy"
+   ],
+   "statement": {
+    "sid": "ExportTickets",
+    "effect": "Allow",
+    "actions": [
+     "dynamodb:Scan",
+     "dynamodb:Query"
+    ],
+    "resources": [
+     "res:ddb-support-tickets"
+    ],
+    "last_used_days": 220
+   },
+   "related_findings": [
+    "PATH-8C8CB507"
+   ],
+   "id": "UNUSED-2CC7D09B",
+   "key": "unused:policy:support-ticket-export:ExportTickets",
+   "type": "unused_permission",
+   "severity": "medium",
+   "title": "Unused permission support-ticket-export / ExportTickets was last used 220 days ago",
+   "facts": [
+    "Statement ExportTickets in policy support-ticket-export was last used 220 days ago."
+   ]
+  },
+  {
+   "policy": "policy:ci-deploy-permissions",
+   "sid": "AssumeAnyRole",
+   "holders": [
+    "role:ci-deploy"
+   ],
+   "statement": {
+    "sid": "AssumeAnyRole",
+    "effect": "Allow",
+    "actions": [
+     "sts:AssumeRole"
+    ],
+    "resources": [
+     "*"
+    ],
+    "last_used_days": 140
+   },
+   "related_findings": [
+    "PATH-437AF20B",
+    "PATH-5BB5B4A8",
+    "PATH-9B77622F",
+    "PATH-F9695166"
+   ],
+   "id": "UNUSED-2FC0AD4B",
+   "key": "unused:policy:ci-deploy-permissions:AssumeAnyRole",
+   "type": "unused_permission",
+   "severity": "medium",
+   "title": "Unused permission ci-deploy-permissions / AssumeAnyRole was last used 140 days ago",
+   "facts": [
+    "Statement AssumeAnyRole in policy ci-deploy-permissions was last used 140 days ago."
+   ]
+  },
+  {
+   "policy": "policy:support-ticket-export",
+   "sid": "ReadPaymentsDb",
+   "holders": [
+    "group:support-legacy"
+   ],
+   "statement": {
+    "sid": "ReadPaymentsDb",
+    "effect": "Allow",
+    "actions": [
+     "rds:*"
+    ],
+    "resources": [
+     "res:rds-payments"
+    ],
+    "last_used_days": null
+   },
+   "related_findings": [
+    "PATH-40520F63"
+   ],
+   "id": "UNUSED-D6BD2902",
+   "key": "unused:policy:support-ticket-export:ReadPaymentsDb",
+   "type": "unused_permission",
+   "severity": "medium",
+   "title": "Unused permission support-ticket-export / ReadPaymentsDb has never been used",
+   "facts": [
+    "Statement ReadPaymentsDb in policy support-ticket-export has never been used."
+   ]
+  },
+  {
+   "policy": "policy:security-audit-read",
+   "sid": "ReadAuditLogs",
+   "holders": [
+    "group:security-auditors"
+   ],
+   "statement": {
+    "sid": "ReadAuditLogs",
+    "effect": "Allow",
+    "actions": [
+     "s3:GetObject",
+     "s3:ListBucket"
+    ],
+    "resources": [
+     "res:s3-*"
+    ],
+    "last_used_days": 0
+   },
+   "related_findings": [],
+   "id": "WILD-23421D2C",
+   "key": "wildcard:policy:security-audit-read:ReadAuditLogs",
+   "type": "wildcard_permission",
+   "severity": "medium",
+   "title": "Wildcard resources res:s3-* in security-audit-read / ReadAuditLogs",
+   "facts": [
+    "Statement ReadAuditLogs in policy security-audit-read allows s3:GetObject, s3:ListBucket on res:s3-*."
+   ]
+  }
+ ],
+ "access": [
+  {
+   "key": "user:jordan.reyes->res:kms-pii-key",
+   "user": "user:jordan.reyes",
+   "resource": "res:kms-pii-key",
+   "level": "read",
+   "roles": [
+    "role:ci-deploy",
+    "role:data-platform-admin"
+   ]
+  },
+  {
+   "key": "user:jordan.reyes->res:s3-analytics-warehouse",
+   "user": "user:jordan.reyes",
+   "resource": "res:s3-analytics-warehouse",
+   "level": "admin",
+   "roles": [
+    "role:ci-deploy",
+    "role:data-platform-admin"
+   ]
+  },
+  {
+   "key": "user:jordan.reyes->res:s3-build-artifacts",
+   "user": "user:jordan.reyes",
+   "resource": "res:s3-build-artifacts",
+   "level": "write",
+   "roles": [
+    "role:ci-deploy"
+   ]
+  },
+  {
+   "key": "user:jordan.reyes->res:s3-customer-pii",
+   "user": "user:jordan.reyes",
+   "resource": "res:s3-customer-pii",
+   "level": "admin",
+   "roles": [
+    "role:ci-deploy",
+    "role:data-platform-admin"
+   ]
+  },
+  {
+   "key": "user:priya.nair->res:s3-analytics-warehouse",
+   "user": "user:priya.nair",
+   "resource": "res:s3-analytics-warehouse",
+   "level": "read",
+   "roles": [
+    "role:analytics-reader"
+   ]
+  },
+  {
+   "key": "user:sam.okafor->res:s3-finance-reports",
+   "user": "user:sam.okafor",
+   "resource": "res:s3-finance-reports",
+   "level": "read",
+   "roles": []
+  },
+  {
+   "key": "user:lena.fischer->res:s3-analytics-warehouse",
+   "user": "user:lena.fischer",
+   "resource": "res:s3-analytics-warehouse",
+   "level": "read",
+   "roles": []
+  },
+  {
+   "key": "user:lena.fischer->res:s3-audit-logs",
+   "user": "user:lena.fischer",
+   "resource": "res:s3-audit-logs",
+   "level": "read",
+   "roles": []
+  },
+  {
+   "key": "user:lena.fischer->res:s3-build-artifacts",
+   "user": "user:lena.fischer",
+   "resource": "res:s3-build-artifacts",
+   "level": "read",
+   "roles": []
+  },
+  {
+   "key": "user:lena.fischer->res:s3-finance-reports",
+   "user": "user:lena.fischer",
+   "resource": "res:s3-finance-reports",
+   "level": "read",
+   "roles": []
+  },
+  {
+   "key": "user:marco.bianchi->res:ddb-support-tickets",
+   "user": "user:marco.bianchi",
+   "resource": "res:ddb-support-tickets",
+   "level": "read",
+   "roles": []
+  },
+  {
+   "key": "user:marco.bianchi->res:rds-payments",
+   "user": "user:marco.bianchi",
+   "resource": "res:rds-payments",
+   "level": "admin",
+   "roles": []
+  },
+  {
+   "key": "user:ava.thompson->res:kms-pii-key",
+   "user": "user:ava.thompson",
+   "resource": "res:kms-pii-key",
+   "level": "read",
+   "roles": [
+    "role:ci-deploy",
+    "role:data-platform-admin"
+   ]
+  },
+  {
+   "key": "user:ava.thompson->res:s3-analytics-warehouse",
+   "user": "user:ava.thompson",
+   "resource": "res:s3-analytics-warehouse",
+   "level": "admin",
+   "roles": [
+    "role:ci-deploy",
+    "role:data-platform-admin"
+   ]
+  },
+  {
+   "key": "user:ava.thompson->res:s3-build-artifacts",
+   "user": "user:ava.thompson",
+   "resource": "res:s3-build-artifacts",
+   "level": "write",
+   "roles": [
+    "role:ci-deploy"
+   ]
+  },
+  {
+   "key": "user:ava.thompson->res:s3-customer-pii",
+   "user": "user:ava.thompson",
+   "resource": "res:s3-customer-pii",
+   "level": "admin",
+   "roles": [
+    "role:ci-deploy",
+    "role:data-platform-admin"
+   ]
+  }
+ ],
+ "graph": {
+  "nodes": [
+   {
+    "id": "user:jordan.reyes",
+    "kind": "user",
+    "label": "Jordan Reyes",
+    "factors": [
+     "no_mfa",
+     "external"
+    ]
+   },
+   {
+    "id": "user:priya.nair",
+    "kind": "user",
+    "label": "Priya Nair",
+    "factors": []
+   },
+   {
+    "id": "user:sam.okafor",
+    "kind": "user",
+    "label": "Sam Okafor",
+    "factors": []
+   },
+   {
+    "id": "user:lena.fischer",
+    "kind": "user",
+    "label": "Lena Fischer",
+    "factors": []
+   },
+   {
+    "id": "user:marco.bianchi",
+    "kind": "user",
+    "label": "Marco Bianchi",
+    "factors": [
+     "no_mfa",
+     "stale"
+    ]
+   },
+   {
+    "id": "user:ava.thompson",
+    "kind": "user",
+    "label": "Ava Thompson",
+    "factors": []
+   },
+   {
+    "id": "group:ci-maintainers",
+    "kind": "group",
+    "label": "CI Maintainers"
+   },
+   {
+    "id": "group:data-engineering",
+    "kind": "group",
+    "label": "Data Engineering"
+   },
+   {
+    "id": "group:support-legacy",
+    "kind": "group",
+    "label": "Support (legacy)"
+   },
+   {
+    "id": "group:security-auditors",
+    "kind": "group",
+    "label": "Security Auditors"
+   },
+   {
+    "id": "role:ci-deploy",
+    "kind": "role",
+    "label": "ci-deploy"
+   },
+   {
+    "id": "role:data-platform-admin",
+    "kind": "role",
+    "label": "data-platform-admin"
+   },
+   {
+    "id": "role:analytics-reader",
+    "kind": "role",
+    "label": "analytics-reader"
+   },
+   {
+    "id": "res:s3-customer-pii",
+    "kind": "resource",
+    "label": "customer-pii",
+    "sensitivity": "critical",
+    "resource_type": "S3 bucket"
+   },
+   {
+    "id": "res:kms-pii-key",
+    "kind": "resource",
+    "label": "pii-encryption-key",
+    "sensitivity": "critical",
+    "resource_type": "KMS key"
+   },
+   {
+    "id": "res:rds-payments",
+    "kind": "resource",
+    "label": "payments-ledger",
+    "sensitivity": "critical",
+    "resource_type": "RDS database"
+   },
+   {
+    "id": "res:s3-finance-reports",
+    "kind": "resource",
+    "label": "finance-reports",
+    "sensitivity": "high",
+    "resource_type": "S3 bucket"
+   },
+   {
+    "id": "res:ddb-support-tickets",
+    "kind": "resource",
+    "label": "support-tickets",
+    "sensitivity": "high",
+    "resource_type": "DynamoDB table"
+   },
+   {
+    "id": "res:s3-analytics-warehouse",
+    "kind": "resource",
+    "label": "analytics-warehouse",
+    "sensitivity": "medium",
+    "resource_type": "S3 bucket"
+   },
+   {
+    "id": "res:s3-audit-logs",
+    "kind": "resource",
+    "label": "audit-logs",
+    "sensitivity": "high",
+    "resource_type": "S3 bucket"
+   },
+   {
+    "id": "res:s3-build-artifacts",
+    "kind": "resource",
+    "label": "build-artifacts",
+    "sensitivity": "low",
+    "resource_type": "S3 bucket"
+   }
+  ],
+  "edges": [
+   {
+    "source": "group:ci-maintainers",
+    "target": "role:ci-deploy",
+    "relation": "can_assume",
+    "grants": [
+     {
+      "policy": "policy:ci-assume-deploy",
+      "sid": "AssumeDeployRole",
+      "action": "sts:AssumeRole"
+     }
+    ],
+    "trust": "account:*",
+    "id": "group:ci-maintainers|can_assume|role:ci-deploy"
+   },
+   {
+    "source": "group:data-engineering",
+    "target": "role:analytics-reader",
+    "relation": "can_assume",
+    "grants": [
+     {
+      "policy": "policy:data-eng-assume",
+      "sid": "AssumeAnalyticsReader",
+      "action": "sts:AssumeRole"
+     }
+    ],
+    "trust": "account:*",
+    "id": "group:data-engineering|can_assume|role:analytics-reader"
+   },
+   {
+    "source": "group:security-auditors",
+    "target": "res:s3-analytics-warehouse",
+    "relation": "access",
+    "grants": [
+     {
+      "policy": "policy:security-audit-read",
+      "sid": "ReadAuditLogs",
+      "action": "s3:GetObject"
+     }
+    ],
+    "level": "read",
+    "id": "group:security-auditors|access|res:s3-analytics-warehouse"
+   },
+   {
+    "source": "group:security-auditors",
+    "target": "res:s3-audit-logs",
+    "relation": "access",
+    "grants": [
+     {
+      "policy": "policy:security-audit-read",
+      "sid": "ReadAuditLogs",
+      "action": "s3:GetObject"
+     }
+    ],
+    "level": "read",
+    "id": "group:security-auditors|access|res:s3-audit-logs"
+   },
+   {
+    "source": "group:security-auditors",
+    "target": "res:s3-build-artifacts",
+    "relation": "access",
+    "grants": [
+     {
+      "policy": "policy:security-audit-read",
+      "sid": "ReadAuditLogs",
+      "action": "s3:GetObject"
+     }
+    ],
+    "level": "read",
+    "id": "group:security-auditors|access|res:s3-build-artifacts"
+   },
+   {
+    "source": "group:security-auditors",
+    "target": "res:s3-finance-reports",
+    "relation": "access",
+    "grants": [
+     {
+      "policy": "policy:security-audit-read",
+      "sid": "ReadAuditLogs",
+      "action": "s3:GetObject"
+     }
+    ],
+    "level": "read",
+    "id": "group:security-auditors|access|res:s3-finance-reports"
+   },
+   {
+    "source": "group:support-legacy",
+    "target": "res:ddb-support-tickets",
+    "relation": "access",
+    "grants": [
+     {
+      "policy": "policy:support-ticket-export",
+      "sid": "ExportTickets",
+      "action": "dynamodb:Scan"
+     }
+    ],
+    "level": "read",
+    "id": "group:support-legacy|access|res:ddb-support-tickets"
+   },
+   {
+    "source": "group:support-legacy",
+    "target": "res:rds-payments",
+    "relation": "access",
+    "grants": [
+     {
+      "policy": "policy:support-ticket-export",
+      "sid": "ReadPaymentsDb",
+      "action": "rds:*"
+     }
+    ],
+    "level": "admin",
+    "id": "group:support-legacy|access|res:rds-payments"
+   },
+   {
+    "source": "role:analytics-reader",
+    "target": "res:s3-analytics-warehouse",
+    "relation": "access",
+    "grants": [
+     {
+      "policy": "policy:analytics-read",
+      "sid": "ReadWarehouse",
+      "action": "s3:GetObject"
+     }
+    ],
+    "level": "read",
+    "id": "role:analytics-reader|access|res:s3-analytics-warehouse"
+   },
+   {
+    "source": "role:ci-deploy",
+    "target": "res:s3-build-artifacts",
+    "relation": "access",
+    "grants": [
+     {
+      "policy": "policy:ci-deploy-permissions",
+      "sid": "DeployArtifacts",
+      "action": "s3:PutObject"
+     }
+    ],
+    "level": "write",
+    "id": "role:ci-deploy|access|res:s3-build-artifacts"
+   },
+   {
+    "source": "role:ci-deploy",
+    "target": "role:data-platform-admin",
+    "relation": "can_assume",
+    "grants": [
+     {
+      "policy": "policy:ci-deploy-permissions",
+      "sid": "AssumeAnyRole",
+      "action": "sts:AssumeRole"
+     }
+    ],
+    "trust": "account:*",
+    "id": "role:ci-deploy|can_assume|role:data-platform-admin"
+   },
+   {
+    "source": "role:data-platform-admin",
+    "target": "res:kms-pii-key",
+    "relation": "access",
+    "grants": [
+     {
+      "policy": "policy:data-platform-full",
+      "sid": "DecryptPii",
+      "action": "kms:Decrypt"
+     }
+    ],
+    "level": "read",
+    "id": "role:data-platform-admin|access|res:kms-pii-key"
+   },
+   {
+    "source": "role:data-platform-admin",
+    "target": "res:s3-analytics-warehouse",
+    "relation": "access",
+    "grants": [
+     {
+      "policy": "policy:data-platform-full",
+      "sid": "FullS3",
+      "action": "s3:*"
+     }
+    ],
+    "level": "admin",
+    "id": "role:data-platform-admin|access|res:s3-analytics-warehouse"
+   },
+   {
+    "source": "role:data-platform-admin",
+    "target": "res:s3-customer-pii",
+    "relation": "access",
+    "grants": [
+     {
+      "policy": "policy:data-platform-full",
+      "sid": "FullS3",
+      "action": "s3:*"
+     }
+    ],
+    "level": "admin",
+    "id": "role:data-platform-admin|access|res:s3-customer-pii"
+   },
+   {
+    "source": "user:ava.thompson",
+    "target": "group:ci-maintainers",
+    "relation": "member_of",
+    "grants": [],
+    "id": "user:ava.thompson|member_of|group:ci-maintainers"
+   },
+   {
+    "source": "user:jordan.reyes",
+    "target": "group:ci-maintainers",
+    "relation": "member_of",
+    "grants": [],
+    "id": "user:jordan.reyes|member_of|group:ci-maintainers"
+   },
+   {
+    "source": "user:lena.fischer",
+    "target": "group:security-auditors",
+    "relation": "member_of",
+    "grants": [],
+    "id": "user:lena.fischer|member_of|group:security-auditors"
+   },
+   {
+    "source": "user:marco.bianchi",
+    "target": "group:support-legacy",
+    "relation": "member_of",
+    "grants": [],
+    "id": "user:marco.bianchi|member_of|group:support-legacy"
+   },
+   {
+    "source": "user:priya.nair",
+    "target": "group:data-engineering",
+    "relation": "member_of",
+    "grants": [],
+    "id": "user:priya.nair|member_of|group:data-engineering"
+   },
+   {
+    "source": "user:sam.okafor",
+    "target": "res:s3-finance-reports",
+    "relation": "access",
+    "grants": [
+     {
+      "policy": "policy:finance-reports-read",
+      "sid": "ReadFinanceReports",
+      "action": "s3:GetObject"
+     }
+    ],
+    "level": "read",
+    "id": "user:sam.okafor|access|res:s3-finance-reports"
+   }
+  ]
+ },
+ "candidates": [
+  {
+   "change": {
+    "op": "remove_statement",
+    "policy": "policy:ci-deploy-permissions",
+    "sid": "AssumeAnyRole"
+   },
+   "label": "Remove statement AssumeAnyRole from policy ci-deploy-permissions",
+   "notes": [
+    "unused for 140 days",
+    "wildcard"
+   ],
+   "on_paths": [
+    "PATH-9B77622F",
+    "PATH-5BB5B4A8",
+    "PATH-F9695166",
+    "PATH-437AF20B"
+   ],
+   "preview": {
+    "broken_paths": [
+     "PATH-437AF20B",
+     "PATH-F9695166",
+     "PATH-5BB5B4A8",
+     "PATH-9B77622F"
+    ],
+    "new_paths": [],
+    "collateral_access_removed": [
+     "user:ava.thompson->res:s3-analytics-warehouse",
+     "user:jordan.reyes->res:s3-analytics-warehouse"
+    ],
+    "risk_before": 516,
+    "risk_after": 167
+   }
+  },
+  {
+   "change": {
+    "op": "remove_statement",
+    "policy": "policy:ci-assume-deploy",
+    "sid": "AssumeDeployRole"
+   },
+   "label": "Remove statement AssumeDeployRole from policy ci-assume-deploy",
+   "notes": [],
+   "on_paths": [
+    "PATH-9B77622F",
+    "PATH-5BB5B4A8",
+    "PATH-F9695166",
+    "PATH-437AF20B"
+   ],
+   "preview": {
+    "broken_paths": [
+     "PATH-437AF20B",
+     "PATH-F9695166",
+     "PATH-5BB5B4A8",
+     "PATH-9B77622F"
+    ],
+    "new_paths": [],
+    "collateral_access_removed": [
+     "user:ava.thompson->res:s3-analytics-warehouse",
+     "user:ava.thompson->res:s3-build-artifacts",
+     "user:jordan.reyes->res:s3-analytics-warehouse",
+     "user:jordan.reyes->res:s3-build-artifacts"
+    ],
+    "risk_before": 516,
+    "risk_after": 167
+   }
+  },
+  {
+   "change": {
+    "op": "remove_group_member",
+    "group": "group:support-legacy",
+    "user": "user:marco.bianchi"
+   },
+   "label": "Remove Marco Bianchi from group Support (legacy)",
+   "notes": [],
+   "on_paths": [
+    "PATH-40520F63",
+    "PATH-8C8CB507"
+   ],
+   "preview": {
+    "broken_paths": [
+     "PATH-8C8CB507",
+     "PATH-40520F63"
+    ],
+    "new_paths": [],
+    "collateral_access_removed": [],
+    "risk_before": 516,
+    "risk_after": 349
+   }
+  },
+  {
+   "change": {
+    "op": "remove_statement",
+    "policy": "policy:data-platform-full",
+    "sid": "DecryptPii"
+   },
+   "label": "Remove statement DecryptPii from policy data-platform-full",
+   "notes": [],
+   "on_paths": [
+    "PATH-5BB5B4A8",
+    "PATH-437AF20B"
+   ],
+   "preview": {
+    "broken_paths": [
+     "PATH-437AF20B",
+     "PATH-5BB5B4A8"
+    ],
+    "new_paths": [],
+    "collateral_access_removed": [],
+    "risk_before": 516,
+    "risk_after": 352
+   }
+  },
+  {
+   "change": {
+    "op": "remove_statement",
+    "policy": "policy:data-platform-full",
+    "sid": "FullS3"
+   },
+   "label": "Remove statement FullS3 from policy data-platform-full",
+   "notes": [
+    "wildcard"
+   ],
+   "on_paths": [
+    "PATH-9B77622F",
+    "PATH-F9695166"
+   ],
+   "preview": {
+    "broken_paths": [
+     "PATH-F9695166",
+     "PATH-9B77622F"
+    ],
+    "new_paths": [],
+    "collateral_access_removed": [],
+    "risk_before": 516,
+    "risk_after": 331
+   }
+  },
+  {
+   "change": {
+    "op": "remove_group_member",
+    "group": "group:ci-maintainers",
+    "user": "user:ava.thompson"
+   },
+   "label": "Remove Ava Thompson from group CI Maintainers",
+   "notes": [],
+   "on_paths": [
+    "PATH-F9695166",
+    "PATH-437AF20B"
+   ],
+   "preview": {
+    "broken_paths": [
+     "PATH-437AF20B",
+     "PATH-F9695166"
+    ],
+    "new_paths": [],
+    "collateral_access_removed": [
+     "user:ava.thompson->res:s3-analytics-warehouse",
+     "user:ava.thompson->res:s3-build-artifacts"
+    ],
+    "risk_before": 516,
+    "risk_after": 358
+   }
+  },
+  {
+   "change": {
+    "op": "remove_group_member",
+    "group": "group:ci-maintainers",
+    "user": "user:jordan.reyes"
+   },
+   "label": "Remove Jordan Reyes from group CI Maintainers",
+   "notes": [],
+   "on_paths": [
+    "PATH-9B77622F",
+    "PATH-5BB5B4A8"
+   ],
+   "preview": {
+    "broken_paths": [
+     "PATH-5BB5B4A8",
+     "PATH-9B77622F"
+    ],
+    "new_paths": [],
+    "collateral_access_removed": [
+     "user:jordan.reyes->res:s3-analytics-warehouse",
+     "user:jordan.reyes->res:s3-build-artifacts"
+    ],
+    "risk_before": 516,
+    "risk_after": 325
+   }
+  },
+  {
+   "change": {
+    "op": "remove_statement",
+    "policy": "policy:support-ticket-export",
+    "sid": "ExportTickets"
+   },
+   "label": "Remove statement ExportTickets from policy support-ticket-export",
+   "notes": [
+    "unused for 220 days"
+   ],
+   "on_paths": [
+    "PATH-8C8CB507"
+   ],
+   "preview": {
+    "broken_paths": [
+     "PATH-8C8CB507"
+    ],
+    "new_paths": [],
+    "collateral_access_removed": [],
+    "risk_before": 516,
+    "risk_after": 446
+   }
+  },
+  {
+   "change": {
+    "op": "remove_statement",
+    "policy": "policy:support-ticket-export",
+    "sid": "ReadPaymentsDb"
+   },
+   "label": "Remove statement ReadPaymentsDb from policy support-ticket-export",
+   "notes": [
+    "never used",
+    "wildcard"
+   ],
+   "on_paths": [
+    "PATH-40520F63"
+   ],
+   "preview": {
+    "broken_paths": [
+     "PATH-40520F63"
+    ],
+    "new_paths": [],
+    "collateral_access_removed": [],
+    "risk_before": 516,
+    "risk_after": 419
+   }
+  }
+ ],
+ "ai": {
+  "provider": "Meta Model API",
+  "configured": false,
+  "model": "muse-spark-1.3"
+ }
+}

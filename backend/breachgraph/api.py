@@ -240,7 +240,7 @@ def api_not_found(rest: str):
 
 # --- the built dashboard ------------------------------------------------------------
 
-@app.get("/{path:path}", include_in_schema=False)
+@app.api_route("/{path:path}", methods=["GET", "HEAD"], include_in_schema=False)
 def frontend(path: str):
     if not FRONTEND_DIST.is_dir():
         return JSONResponse({"message": "Dashboard not built. Run `npm run build` in breachgraph/frontend, "
