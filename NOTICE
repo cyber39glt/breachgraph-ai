@@ -1,0 +1,21 @@
+BreachGraph AI
+Copyright 2026 cyber39glt (GreenLanTech)
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product depends on third-party components under their own licences.
+Each package's own licence file is authoritative.
+
+Bundled in the web dashboard (frontend/dist):
+- Space Grotesk, Inter and JetBrains Mono fonts, via @fontsource:
+  SIL Open Font License 1.1. Licence texts: frontend/public/licenses/
+  (served by the dashboard at /licenses/).
+- React, React DOM, Cytoscape.js, cytoscape-dagre: MIT licence.
+- Lucide icons (lucide-react): ISC licence.
+
+Python dependencies (installed separately, unmodified):
+- FastAPI, Pydantic: MIT licence.
+- Starlette, Uvicorn, HTTPX, python-dotenv: BSD 3-Clause licence.
+
+"GreenLanTech" and the GreenLanTech visual identity belong to their owner and
+are not licensed under the Apache License.

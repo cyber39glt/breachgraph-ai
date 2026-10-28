@@ -364,6 +364,11 @@ data/            sample_org.json (synthetic) · fixes/
 docs/            architecture.md · demo-script.md · design-system.md · screenshots/
 ```
 
+## Licence
+
+[Apache License 2.0](LICENSE). Third-party components and font licences are listed in
+[NOTICE](NOTICE). The GreenLanTech name and visual identity are not covered by the licence.
+
 ---
 
 BreachGraph AI · a GreenLanTech project
