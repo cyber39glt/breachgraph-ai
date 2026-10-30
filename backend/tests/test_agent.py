@@ -177,3 +177,14 @@ def test_endpoint_rate_limit(client, with_key, monkeypatch):
         assert stream(client, {"finding_id": SIGNATURE_PATH})[0].status_code == 200
     r = client.post("/api/agent/fix", json={"finding_id": SIGNATURE_PATH})
     assert r.status_code == 429 and r.json()["error"] == "local_rate_limited"
+
+
+def test_wrong_key_is_explained_to_the_model_and_corrected(demo):
+    wrong = {"operation": "remove_statement", "policy": "policy:ci-deploy-permissions", "sid": "AssumeAnyRole"}
+    t = scripted(reply("Remove the wildcard.", [wrong]), reply("Use the op key.", [REMOVE_WILDCARD], done=True))
+    events = run(demo, t)
+    first = rounds(events)[0]
+    assert first["changes"] == [] and 'missing "op" (found keys: operation, policy, sid)' in first["rejected"][0]
+    assert 'missing \\"op\\"' in t.seen[1]["messages"][-1]["content"]  # the reason reached the model
+    assert result(events)["outcome"] == "verified"
+    assert '"op": "remove_statement"' in t.seen[0]["messages"][0]["content"]  # example in the agent prompt

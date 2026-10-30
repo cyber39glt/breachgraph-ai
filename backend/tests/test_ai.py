@@ -11,7 +11,7 @@ import httpx
 import pytest
 
 from breachgraph import ai, api
-from breachgraph.ai import AIError, AISettings, parse_explanation
+from breachgraph.ai import AIError, AISettings, check_change, parse_explanation
 from conftest import FAKE_KEY, GOOD_EXPLANATION, SIGNATURE_PATH, model_reply
 
 
@@ -165,3 +165,28 @@ def test_blank_key_counts_as_missing(monkeypatch):
 def test_redact():
     assert ai.redact(f"key={FAKE_KEY}", FAKE_KEY) == "key=[REDACTED]"
     assert ai.redact("nothing", None) == "nothing"
+
+
+@pytest.mark.parametrize("change,reason", [
+    # The exact mistake Muse Spark made in a live run: "operation" instead of "op".
+    ({"operation": "remove_statement", "policy": "policy:a", "sid": "b"},
+     'missing "op" (found keys: operation, policy, sid)'),
+    ({"op": "drop_table"}, "unknown op 'drop_table'"),
+    ({"op": "remove_statement", "policy": "policy:a"}, 'missing or invalid "sid"'),
+    ({"op": "set_role_trust", "role": "role:a", "trusted_principals": "user:x"}, '"trusted_principals" must be a list'),
+    ("remove everything", "a change must be a JSON object"),
+])
+def test_rejections_explain_why(change, reason):
+    clean, problem = check_change(change)
+    assert clean is None and problem.startswith(reason)
+
+
+def test_explanation_carries_rejection_reason():
+    out = parse_explanation(json.dumps({"summary": "s", "remediation": [
+        {"title": "t", "change": {"operation": "remove_statement", "policy": "policy:a", "sid": "b"}}]}))
+    item = out["remediation"][0]
+    assert item["change_rejected"] and item["rejection_reason"].startswith('missing "op"')
+
+
+def test_prompt_shows_the_exact_change_format():
+    assert '"op": "remove_statement"' in ai.SYSTEM_PROMPT

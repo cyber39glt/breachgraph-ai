@@ -320,6 +320,7 @@ main { outline: none; }
 .ai-section li { margin-bottom: var(--s-1); }
 .ai-fixes li { padding: var(--s-3); border-radius: var(--radius); background: var(--surface); border: 1px solid var(--rule-soft); }
 .ai-fixes li .btn { margin-top: var(--s-3); }
+.ai-fixes .chip { white-space: normal; }
 .ai-panel > .btn { margin-top: var(--s-2); }
 
 /* ---- Fix Agent ------------------------------------------------------------------------ */
@@ -329,6 +330,7 @@ main { outline: none; }
 .agent-round { background: var(--surface); border: 1px solid var(--rule-soft); border-radius: var(--radius); padding: var(--s-4); display: grid; gap: var(--s-3); }
 .agent-round > * { min-width: 0; } /* let code blocks scroll instead of widening the card */
 .agent-round .chip, .fix-agent .notice .chip { white-space: normal; }
+.agent-round .code pre, .ai-fixes .code pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .agent-round.best { border-color: var(--glt-forest); box-shadow: inset 3px 0 0 var(--glt-lime); }
 .agent-round-head { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
 .agent-round-head .step-num { width: 32px; font-size: var(--text-sm); }

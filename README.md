@@ -76,7 +76,7 @@ cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-pytest -q                                    # expect: 92 passed
+pytest -q                                    # expect: 100 passed
 
 # 2. Dashboard (build once; the API serves it)
 cd ../frontend
@@ -324,7 +324,7 @@ It is the top-ranked candidate in the simulator.
 
 | Suite | Command | Result (this commit) |
 |---|---|---|
-| Engine, simulator, API, AI integration, Fix Agent | `cd backend && pytest -q` | 92 passed |
+| Engine, simulator, API, AI integration, Fix Agent | `cd backend && pytest -q` | 100 passed |
 | Dashboard components and workflows | `cd frontend && npm test` | 17 passed |
 | Type check and production build | `cd frontend && npm run build` | passes |
 | Live browser check (console errors, CSP, screenshots) | `node frontend/e2e/screens.mjs <outdir>` with the API running | no errors |

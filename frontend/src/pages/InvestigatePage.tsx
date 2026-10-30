@@ -160,7 +160,9 @@ function AIResult({ result, finding }: { result: Explanation; finding: PathFindi
                 {r.rationale && <p>{r.rationale}</p>}
                 {r.change && <CodeBlock value={r.change} />}
                 <p className="chips">
-                  {r.change_rejected && <Chip tone="risk">Not a valid simulator operation: ignored</Chip>}
+                  {r.change_rejected && (
+                    <Chip tone="risk">Not a valid simulator operation{r.rejection_reason ? ` (${r.rejection_reason})` : ""}: ignored</Chip>
+                  )}
                   {!r.change && !r.change_rejected && <Chip>Advice only: cannot be simulated</Chip>}
                   {v && !v.valid && <Chip tone="risk">Rejected by simulator: {v.error}</Chip>}
                   {v?.valid && (

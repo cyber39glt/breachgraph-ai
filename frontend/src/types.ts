@@ -198,6 +198,7 @@ export interface Explanation {
       rationale: string;
       change: Change | null;
       change_rejected: boolean;
+      rejection_reason?: string | null;
       verification: RemediationVerification | null;
     }>;
   };
