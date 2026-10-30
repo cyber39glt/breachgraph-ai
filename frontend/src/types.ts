@@ -203,3 +203,41 @@ export interface Explanation {
   };
   evidence_sent: unknown;
 }
+
+export interface AgentVerification {
+  valid: boolean;
+  error?: string;
+  target_path_broken?: boolean;
+  requirements_met?: boolean;
+  broken_paths?: Array<{ id: string; title: string }>;
+  still_open_paths?: Array<{ id: string; title: string }>;
+  new_paths?: Array<{ id: string; title: string }>;
+  other_access_removed?: Array<{ key: string; identity: string; resource: string; level: Level; via_roles: string[] }>;
+  risk_before?: number;
+  risk_after?: number;
+}
+
+export interface AgentRound {
+  round: number;
+  analysis: string;
+  changes: Change[];
+  rejected: string[];
+  verification: AgentVerification | null;
+  model_done: boolean;
+}
+
+export interface AgentResult {
+  finding_id: string;
+  provider: string;
+  model: string;
+  outcome: "verified" | "not_found";
+  best_round: number | null;
+  best_changes: Change[];
+  stopped_reason: string;
+  model_calls: number;
+}
+
+export type AgentEvent =
+  | ({ type: "round" } & AgentRound)
+  | ({ type: "result" } & AgentResult)
+  | { type: "error"; error: string; message: string };

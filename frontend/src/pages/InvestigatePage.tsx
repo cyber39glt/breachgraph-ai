@@ -1,5 +1,6 @@
 import { FlaskConical, RotateCcw, Sparkles, Waypoints } from "lucide-react";
 import { useMemo } from "react";
+import { FixAgentPanel } from "../components/FixAgentPanel";
 import { GraphView } from "../components/GraphView";
 import { AILabel, Chip, CodeBlock, Empty, Entity, Eyebrow, LevelTag, Notice, PageHeader, SeverityBadge, Spinner, VerifiedLabel } from "../components/ui";
 import { edgeId, isPath, pathElements, pathsOf, RELATION_LABEL } from "../lookup";
@@ -279,6 +280,7 @@ export function InvestigatePage({ findingId }: { findingId?: string }) {
         </div>
         <div className="stack">
           <AIPanel finding={finding} />
+          <FixAgentPanel finding={finding} />
           <div className="card card-quiet">
             <Eyebrow>How to read this page</Eyebrow>
             <p className="small">Panels marked <strong>Verified by engine</strong> come from deterministic analysis of the

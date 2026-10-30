@@ -38,6 +38,7 @@ permission, is the path gone, and what else breaks?"*
 | **Transparent severity** | Scores are a visible sum of named factors (sensitivity, access level, MFA, external identity, inactivity, role escalation), not a black box. |
 | **Meta AI explanations** | On request, Meta AI explains one verified finding: the risk, the likely impact, which statements are facts and which are assumptions, and least-privilege fixes. |
 | **AI proposes, engine verifies** | Every fix the AI suggests is checked against the simulator before it is shown. You see whether it really breaks the path. |
+| **Fix Agent** | A verifiable agent loop: Muse Spark proposes a least-privilege fix, the simulator measures it, and the measurement goes back to the model to refine, up to 4 rounds. Each round streams live to the dashboard. Only the simulator decides when a fix works. |
 | **Remediation simulator** | Pick one or more changes and the whole analysis re-runs on a copy of the data. Before/after graphs, broken vs remaining paths, new paths, and *other access the change would remove*. |
 | **Works without AI** | Analysis, graph, investigation and simulation all work with no API key. |
 
@@ -75,12 +76,12 @@ cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-pytest -q                                    # expect: 80 passed
+pytest -q                                    # expect: 92 passed
 
 # 2. Dashboard (build once; the API serves it)
 cd ../frontend
 npm ci
-npm test                                     # expect: 13 passed
+npm test                                     # expect: 17 passed
 npm run build
 
 # 3. Run
@@ -183,8 +184,8 @@ were confirmed with a live call during the hackathon. If your account uses somet
 different, the live check will tell you; then set `MODEL_API_BASE_URL` or `MODEL_NAME`.
 
 **Credit safety.** Nothing calls the model automatically. A call happens only when you press
-*Generate explanation*. Answers are cached per finding, and the server allows at most 6 AI
-calls per minute.
+*Generate explanation* or *Run Fix Agent*. Explanations are cached per finding, and the server
+allows at most 6 explanations and 2 Fix Agent runs (up to 4 calls each) per minute.
 
 ---
 
@@ -250,6 +251,25 @@ flowchart LR
   timeouts, network failures and malformed replies each get a clear message. Upstream error
   bodies are never passed on, and the key never appears in responses or logs (both tested).
 
+### The Fix Agent (`backend/breachgraph/agent.py`)
+
+A bounded, verifiable agent loop. Each round:
+
+1. **Propose.** Muse Spark receives the verified path, the policies it could change, and the
+   simulator's operation vocabulary. It replies with up to 3 changes as JSON, plus its reasoning.
+2. **Verify.** The changes are validated and run through the simulator on a copy of the data.
+   The measurement records whether the target path broke, whether new paths appeared, and
+   what other access would be lost.
+3. **Feed back.** That measurement, including any rejection such as an unknown id, is sent
+   back to the model, which refines its proposal.
+
+The loop stops when the model is done and a verified fix exists, when a fix breaks the path
+with no other access removed, or after 4 rounds. **The model's own claims never count:** a
+fix is accepted only if the simulator confirms it breaks the target path and opens no new
+ones. Among accepted rounds, the agent keeps the one that removes the least other access.
+Rounds stream to the dashboard as newline-delimited JSON (`POST /api/agent/fix`). If the API
+fails mid-run, the verified rounds are kept and the failure is reported.
+
 ### The simulator (`backend/breachgraph/simulate.py`)
 
 Changes (`remove_statement`, `remove_group_member`, `detach_policy`,
@@ -304,8 +324,8 @@ It is the top-ranked candidate in the simulator.
 
 | Suite | Command | Result (this commit) |
 |---|---|---|
-| Engine, simulator, API, AI integration | `cd backend && pytest -q` | 80 passed |
-| Dashboard components and workflows | `cd frontend && npm test` | 13 passed |
+| Engine, simulator, API, AI integration, Fix Agent | `cd backend && pytest -q` | 92 passed |
+| Dashboard components and workflows | `cd frontend && npm test` | 17 passed |
 | Type check and production build | `cd frontend && npm run build` | passes |
 | Live browser check (console errors, CSP, screenshots) | `node frontend/e2e/screens.mjs <outdir>` with the API running | no errors |
 

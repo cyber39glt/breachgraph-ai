@@ -11,6 +11,8 @@ Demo the **running product**, not slides. Total ≈ 3:00.
 - [ ] Generate the AI explanation for `PATH-9B77622F` once beforehand, so the recording uses the
       cached answer and does not wait on the network. Say on camera that it was generated live
       by Meta AI (it is, and it is labelled with the model and time).
+- [ ] Run the **Fix Agent** on the same path and keep the tab open (see "Recording the agent
+      honestly" below). Running it uses up to 4 model calls.
 
 ---
 
@@ -33,7 +35,7 @@ four steps."* Click **Attack graph**, choose the path in *Highlight*, and click 
 > `AssumeAnyRole`: `sts:AssumeRole` on **star**, last used **140 days ago**. That one wildcard
 > turns a deploy role into a stepping stone to the data platform's admin role."
 
-## 0:50 – 1:30 · Evidence and severity (Investigate)
+## 0:50 – 1:15 · Evidence and severity (Investigate)
 
 Click **Investigate** on the path.
 
@@ -41,49 +43,57 @@ Click **Investigate** on the path.
 > statement. This comes from a deterministic Python engine that applies AWS-style rules:
 > sessions, role trust, explicit deny. It's reproducible and covered by tests."
 
-Scroll to **Why this severity**: *"No black-box score. Critical resource +60, admin +20, no MFA
-+10, contractor +8, escalation +5. Capped at 100."*
+Point at **Why this severity**: *"No black-box score: every point is a named factor."*
 
-## 1:30 – 2:05 · Meta AI explanation (AI panel)
+## 1:15 – 1:35 · Meta AI explanation (AI panel)
 
-Click **Generate explanation** (or show the cached one).
+Show the explanation you generated before recording.
 
-> "Now Meta AI explains it. We send **only this finding's evidence**, not the dataset, and ask
-> for facts, assumptions and uncertainties **separately**. The panel is clearly labelled
-> AI-generated, with the model name."
+> "Muse Spark explains it from **only this finding's evidence**, and keeps facts, assumptions
+> and uncertainties **separate**. It's clearly labelled AI-generated, with the model and time."
 
-Point at **Assumptions (not verified)**, then at a suggested fix and its chip:
+## 1:35 – 2:15 · The Fix Agent (the core Meta AI feature)
 
-> "The AI's fixes aren't taken on trust. Each is run through our simulator. This one says
-> 'Simulator: breaks this path'. That's the engine talking, not the model."
+Show the Fix Agent run you started before recording (see below), scrolling through the rounds.
 
-If the AI suggests narrowing `FullS3` (as it did in the live check), add:
+> "This is the Fix Agent. Muse Spark proposes a least-privilege fix, as structured changes.
+> Our simulator applies them to a copy of the data and measures the result, and that
+> measurement goes **back to the model**, which refines its proposal."
 
-> "That fix breaks 2 paths. The engine's top-ranked fix, removing the unused wildcard, breaks
-> 4. The AI gives a reasonable idea, and the simulator tells us which fix is better."
+Point at a round's two halves:
 
-## 2:05 – 2:45 · Verified remediation (Simulate fix)
+> "Dashed is what the model proposed. Solid is what the simulator measured. If the model gets
+> something wrong, like an id that doesn't exist, the simulator rejects it and the agent
+> corrects itself in the next round. The model never gets to say 'fixed': only the simulator
+> does."
 
-Click **Open in simulator** (or select the first candidate and run it).
+Point at **Verified fix found in round N**, then click **Open in simulator**.
 
-> "Here's the fix: remove the unused `AssumeAnyRole` statement. The whole analysis re-runs on a
-> copy of the data."
+## 2:15 – 2:50 · Verified remediation (Simulate fix)
 
-Point, in order:
-1. **"4 attack paths confirmed broken"**: *"confirmed by recomputation, not predicted."*
-2. **Attack paths 6 → 2, risk 516 → 167, critical 4 → 1.**
+> "The whole analysis re-runs on the changed copy."
+
+Point, in order (numbers shown are for removing `AssumeAnyRole`; read the ones on screen):
+1. **"N attack paths confirmed broken"**: *"confirmed by recomputation, not predicted."*
+2. **The before/after metrics** (attack paths, risk, critical findings).
 3. **Before/After graphs**: the lime dashed edge is the cut.
-4. **Still open: 2**: *"Marco's legacy support group is a separate problem. We don't pretend
-   one fix solves everything."*
-5. **Other access removed**: *"It tells you what else changes, so you can check nobody loses
-   access they need. CI keeps its deploy access."*
+4. **Still open**: *"Marco's legacy support group is a separate problem. We don't pretend one
+   fix solves everything."*
+5. **Other access removed**: *"It tells you what else changes, so nobody loses access they
+   need by surprise."*
 
-## 2:45 – 3:00 · Close
+## 2:50 – 3:00 · Close
 
-> "BreachGraph AI: a deterministic engine for proof, Meta AI for explanation, and a simulator so
-> every fix is verified before anyone changes a permission. Built for this hackathon on
-> synthetic data, with no real cloud access needed. It's open source at
-> github.com/cyber39glt/breachgraph-ai."
+> "BreachGraph AI: a deterministic engine for proof, a Muse Spark agent that proposes fixes,
+> and a simulator that verifies every one before anyone touches a permission. Built during
+> this hackathon, on synthetic data. Open source at github.com/cyber39glt/breachgraph-ai."
+
+### Recording the agent honestly
+
+A full agent run can take 30 seconds to 2 minutes. Start it before you record, and keep the
+browser tab open (reloading clears it). On camera, say it was run live by Muse Spark a moment
+earlier. If you record the run itself, you may speed it up in editing, but label it on screen
+(for example "sped up 4×"). Never edit or stage the model's output.
 
 ---
 
@@ -92,5 +102,6 @@ Point, in order:
 | Situation | What to do |
 |---|---|
 | AI call fails or times out | Show the error panel: *"It reports the real failure and never invents an answer."* Continue with the engine-ranked fixes. |
+| Fix Agent finds no verified fix | Show it: *"The agent didn't find one, and the app says so instead of pretending."* Use the engine-ranked fix. |
 | No API credits / key | The AI panel says "AI explanations are off"; demo everything else. |
 | Graph looks cramped | Use the **fit** button (top right of the graph). |

@@ -322,6 +322,21 @@ main { outline: none; }
 .ai-fixes li .btn { margin-top: var(--s-3); }
 .ai-panel > .btn { margin-top: var(--s-2); }
 
+/* ---- Fix Agent ------------------------------------------------------------------------ */
+.fix-agent h2 { display: inline-flex; align-items: center; gap: var(--s-2); }
+.fix-agent > .btn { margin: var(--s-2) var(--s-2) 0 0; }
+.agent-rounds { list-style: none; margin: var(--s-4) 0; padding: 0; display: grid; gap: var(--s-3); }
+.agent-round { background: var(--surface); border: 1px solid var(--rule-soft); border-radius: var(--radius); padding: var(--s-4); display: grid; gap: var(--s-3); }
+.agent-round > * { min-width: 0; } /* let code blocks scroll instead of widening the card */
+.agent-round .chip, .fix-agent .notice .chip { white-space: normal; }
+.agent-round.best { border-color: var(--glt-forest); box-shadow: inset 3px 0 0 var(--glt-lime); }
+.agent-round-head { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+.agent-round-head .step-num { width: 32px; font-size: var(--text-sm); }
+.agent-proposal { border-left: 2px dashed var(--ai-rule); padding-left: var(--s-3); }
+.agent-proposal p { margin: var(--s-2) 0 0; font-size: var(--text-sm); }
+.agent-verdict { border-left: 2px solid var(--glt-forest); padding-left: var(--s-3); }
+.agent-collateral { margin: var(--s-2) 0 0; padding-left: 1.1em; }
+
 /* ---- Simulator ---------------------------------------------------------------------- */
 .candidates ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
 .candidates li { display: flex; gap: var(--s-3); align-items: flex-start; padding: var(--s-3); border-radius: var(--radius); border: 1px solid var(--rule-soft); transition: border-color 120ms var(--ease), background 120ms var(--ease); }

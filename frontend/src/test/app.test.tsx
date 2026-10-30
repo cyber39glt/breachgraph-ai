@@ -12,7 +12,7 @@ vi.mock("../components/GraphView", () => ({
   GraphLegend: () => null,
 }));
 
-type Handler = (body: unknown) => { status: number; json: unknown };
+type Handler = (body: unknown) => { status: number; json?: unknown; ndjson?: unknown[] };
 let routes: Record<string, Handler>;
 let calls: Array<{ url: string; body: unknown }>;
 
@@ -36,7 +36,11 @@ beforeEach(() => {
     calls.push({ url: key, body });
     const handler = routes[key];
     if (!handler) throw new TypeError("Failed to fetch");
-    const { status, json } = handler(body);
+    const { status, json, ndjson } = handler(body);
+    if (ndjson) {
+      const text = ndjson.map((e) => JSON.stringify(e)).join("\n") + "\n";
+      return new Response(text, { status, headers: { "Content-Type": "application/x-ndjson" } });
+    }
     return new Response(JSON.stringify(json), { status, headers: { "Content-Type": "application/json" } });
   }));
   window.location.hash = "";
@@ -199,5 +203,69 @@ describe("dataset", () => {
       await userEvent.upload(screen.getByLabelText("Dataset JSON file"), file);
     });
     await waitFor(() => expect(screen.getByText("'users' must be a list")).toBeInTheDocument());
+  });
+});
+
+describe("fix agent", () => {
+  const FIX = { op: "set_statement_resources", policy: "policy:data-platform-full", sid: "FullS3",
+    resources: ["res:s3-analytics-warehouse"] };
+  const round = (n: number, extra: object) => ({
+    type: "round", round: n, analysis: `Round ${n} reasoning`, changes: [FIX], rejected: [], model_done: false, ...extra,
+  });
+
+  it("is disabled without an API key", async () => {
+    await open(`#/investigate/${SIGNATURE}`);
+    expect(screen.getByRole("button", { name: "Run Fix Agent" })).toBeDisabled();
+  });
+
+  it("shows each round with the simulator's verdict and the verified result", async () => {
+    routes["POST /api/analyze"] = ok(withAI(true));
+    routes["POST /api/agent/fix"] = () => ({ status: 200, ndjson: [
+      round(1, { changes: [], rejected: ["Not a valid simulator operation: {}"], verification: null }),
+      round(2, { verification: { valid: true, target_path_broken: true, requirements_met: true,
+        broken_paths: [{ id: SIGNATURE, title: "t" }, { id: "PATH-F9695166", title: "t2" }], new_paths: [],
+        still_open_paths: [], other_access_removed: [], risk_before: 516, risk_after: 331 } }),
+      { type: "result", finding_id: SIGNATURE, provider: "Meta Model API", model: "muse-spark-1.3",
+        outcome: "verified", best_round: 2, best_changes: [FIX], stopped_reason: "nothing_left_to_improve", model_calls: 2 },
+    ] });
+    await open(`#/investigate/${SIGNATURE}`);
+    await userEvent.click(screen.getByRole("button", { name: "Run Fix Agent" }));
+    expect(await screen.findByText("Verified fix found in round 2")).toBeInTheDocument();
+    expect(screen.getByText("Round 1 reasoning")).toBeInTheDocument();
+    expect(screen.getByText("Not a valid simulator operation: {}")).toBeInTheDocument();
+    expect(screen.getByText("Target path broken")).toBeInTheDocument();
+    expect(screen.getByText("+1 other path broken")).toBeInTheDocument();
+    expect(screen.getByText("Best verified fix")).toBeInTheDocument();
+    expect(calls.find((c) => c.url === "POST /api/agent/fix")?.body).toEqual({ finding_id: SIGNATURE });
+    await userEvent.click(screen.getByRole("button", { name: "Open in simulator" }));
+    expect(await screen.findByText("4 attack paths confirmed broken")).toBeInTheDocument();
+    expect(calls.find((c) => c.url === "POST /api/simulate")?.body).toEqual({ changes: [FIX] });
+  });
+
+  it("never reports a fix when no round met the requirements", async () => {
+    routes["POST /api/analyze"] = ok(withAI(true));
+    routes["POST /api/agent/fix"] = () => ({ status: 200, ndjson: [
+      round(1, { verification: { valid: true, target_path_broken: false, requirements_met: false, broken_paths: [],
+        new_paths: [], other_access_removed: [], risk_before: 516, risk_after: 516 } }),
+      { type: "error", error: "rate_limited", message: "The Meta Model API rate limit or credit limit was reached." },
+      { type: "result", finding_id: SIGNATURE, provider: "Meta Model API", model: "muse-spark-1.3",
+        outcome: "not_found", best_round: null, best_changes: [], stopped_reason: "rate_limited", model_calls: 1 },
+    ] });
+    await open(`#/investigate/${SIGNATURE}`);
+    await userEvent.click(screen.getByRole("button", { name: "Run Fix Agent" }));
+    expect(await screen.findByText("No verified fix yet")).toBeInTheDocument();
+    expect(screen.getByText("Target path still open")).toBeInTheDocument();
+    expect(screen.getByText("The agent stopped early")).toBeInTheDocument();
+    expect(screen.queryByText(/Verified fix found/)).not.toBeInTheDocument();
+  });
+
+  it("reports a refusal before any round", async () => {
+    routes["POST /api/analyze"] = ok(withAI(true));
+    routes["POST /api/agent/fix"] = () => ({ status: 429,
+      json: { error: "local_rate_limited", message: "At most 2 Fix Agent runs per minute. Try again shortly." } });
+    await open(`#/investigate/${SIGNATURE}`);
+    await userEvent.click(screen.getByRole("button", { name: "Run Fix Agent" }));
+    expect(await screen.findByText("The agent could not start")).toBeInTheDocument();
+    expect(screen.getByText(/At most 2 Fix Agent runs per minute/)).toBeInTheDocument();
   });
 });

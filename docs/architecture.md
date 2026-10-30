@@ -42,6 +42,7 @@ sequenceDiagram
 | `simulate.py` | Six change operations on a copy; diff of paths and access | No |
 | `remediation.py` | Candidate cuts on attack paths, each measured by the simulator | No |
 | `ai.py` | Evidence bundle, prompt, Meta Model API call, error mapping, output validation, simulator verification | Yes (explain only) |
+| `agent.py` | Fix Agent loop: model proposes changes, simulator verifies, measured feedback to the model | Yes (proposals only) |
 | `api.py` | HTTP endpoints, request limits, security headers, credit protection, static dashboard | No |
 
 ## API
@@ -53,6 +54,7 @@ sequenceDiagram
 | POST | `/api/analyze` | Findings, evidence, graph, ranked remediation candidates |
 | POST | `/api/simulate` | Before/after analysis for 1–20 changes |
 | POST | `/api/explain` | Meta AI explanation for one attack-path finding |
+| POST | `/api/agent/fix` | Fix Agent: streams propose → simulate → feedback rounds (NDJSON) |
 
 Interactive docs: `http://127.0.0.1:8000/api/docs`.
 

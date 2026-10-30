@@ -49,6 +49,7 @@ def client(monkeypatch):
     api._analysis_cache.clear()
     api._explain_cache.clear()
     api._explain_calls.clear()
+    api._agent_calls.clear()
     monkeypatch.setattr(api, "ai_transport", None)
     with TestClient(api.app) as c:
         yield c

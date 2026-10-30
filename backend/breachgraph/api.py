@@ -21,11 +21,12 @@ from typing import Any
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import __version__
+from .agent import MAX_ROUNDS, run_fix_agent
 from .ai import PROVIDER, AIError, AISettings, explain_finding
 from .engine import analyze
 from .model import DatasetError, load_dataset, validate_dataset
@@ -46,6 +47,7 @@ MAX_ENTITIES = {"users": 300, "groups": 300, "roles": 200, "policies": 1000, "re
 MAX_STATEMENTS_PER_POLICY = 50
 MAX_CHANGES = 20
 EXPLAIN_LIMIT_PER_MINUTE = 6
+AGENT_LIMIT_PER_MINUTE = 2  # each run makes up to MAX_ROUNDS model calls
 
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; "
        "connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
@@ -67,6 +69,10 @@ class SimulateRequest(DatasetRequest):
 
 class ExplainRequest(DatasetRequest):
     finding_id: str = Field(pattern=r"^PATH-[0-9A-F]{8}$")
+
+
+class AgentRequest(ExplainRequest):
+    max_rounds: int = Field(default=MAX_ROUNDS, ge=1, le=MAX_ROUNDS)
 
 
 # --- helpers ----------------------------------------------------------------------
@@ -93,7 +99,8 @@ class _LRU(OrderedDict):
 _analysis_cache = _LRU(16)
 _explain_cache = _LRU(64)
 _explain_calls: deque[float] = deque()
-_explain_lock = threading.Lock()
+_agent_calls: deque[float] = deque()
+_rate_lock = threading.Lock()
 # Tests replace this with an httpx.MockTransport so they never reach the real API.
 ai_transport = None
 
@@ -123,6 +130,26 @@ def _fingerprint(data: dict[str, Any]) -> str:
 
 def _analysis(data: dict[str, Any]) -> dict[str, Any]:
     return _analysis_cache.get_or(_fingerprint(data), lambda: analyze(data))
+
+
+def _path_finding(analysis: dict[str, Any], finding_id: str) -> dict[str, Any]:
+    # Looked up from the engine's own result; clients cannot supply evidence.
+    finding = next((f for f in analysis["findings"] if f["id"] == finding_id), None)
+    if finding is None:
+        raise HTTPException(404, "No attack-path finding with that id in this dataset.")
+    return finding
+
+
+def _take_slot(calls: deque[float], limit: int, what: str) -> None:
+    """Protect API credits from accidental repeated calls."""
+    with _rate_lock:
+        now = time.monotonic()
+        while calls and now - calls[0] > 60:
+            calls.popleft()
+        if len(calls) >= limit:
+            raise AIError("local_rate_limited", f"At most {limit} {what} per minute. Try again shortly.",
+                          429, retry_after="60")
+        calls.append(now)
 
 
 def _ai_status() -> dict[str, Any]:
@@ -206,31 +233,40 @@ def simulate_endpoint(req: SimulateRequest) -> dict[str, Any]:
 def explain_endpoint(req: ExplainRequest) -> dict[str, Any]:
     data = _dataset(req)
     analysis = _analysis(data)
-    # The finding is looked up from the engine's own result; clients cannot supply evidence.
-    finding = next((f for f in analysis["findings"] if f["id"] == req.finding_id), None)
-    if finding is None:
-        raise HTTPException(404, "No attack-path finding with that id in this dataset.")
+    finding = _path_finding(analysis, req.finding_id)
     settings = AISettings.from_env()
     key = f"{_fingerprint(data)}:{finding['id']}:{settings.model}"
     if settings.configured and key in _explain_cache:
         return {**_explain_cache[key], "cached": True}
 
-    with _explain_lock:  # protect API credits from accidental repeated calls
-        now = time.monotonic()
-        while _explain_calls and now - _explain_calls[0] > 60:
-            _explain_calls.popleft()
-        if settings.configured and len(_explain_calls) >= EXPLAIN_LIMIT_PER_MINUTE:
-            raise AIError("local_rate_limited",
-                          f"At most {EXPLAIN_LIMIT_PER_MINUTE} AI explanations per minute. Try again shortly.",
-                          429, retry_after="60")
-        if settings.configured:
-            _explain_calls.append(now)
+    if settings.configured:
+        _take_slot(_explain_calls, EXPLAIN_LIMIT_PER_MINUTE, "AI explanations")
 
     result = explain_finding(data, analysis, finding, settings, transport=ai_transport)
     result = {**result, "ai_generated": True, "generated_at": int(time.time())}
     _explain_cache.get_or(key, lambda: result)
     log.info("AI explanation generated for %s with %s", finding["id"], settings.model)
     return {**result, "cached": False}
+
+
+@app.post("/api/agent/fix")
+def agent_endpoint(req: AgentRequest):
+    """Stream the Fix Agent's rounds as newline-delimited JSON, then a final result."""
+    data = _dataset(req)
+    analysis = _analysis(data)
+    finding = _path_finding(analysis, req.finding_id)
+    settings = AISettings.from_env()
+    if not settings.configured:
+        raise AIError("not_configured", "AI is off: MODEL_API_KEY is not set on the server.", 503)
+    _take_slot(_agent_calls, AGENT_LIMIT_PER_MINUTE, "Fix Agent runs")
+
+    def events():
+        for event in run_fix_agent(data, analysis, finding, settings, transport=ai_transport,
+                                   max_rounds=req.max_rounds):
+            yield json.dumps(event) + "\n"
+        log.info("Fix Agent run finished for %s with %s", finding["id"], settings.model)
+
+    return StreamingResponse(events(), media_type="application/x-ndjson")
 
 
 @app.api_route("/api/{rest:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"], include_in_schema=False)
