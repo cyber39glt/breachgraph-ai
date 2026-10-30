@@ -111,6 +111,15 @@ uvicorn breachgraph.api:app --host 127.0.0.1 --port 8000
 If PowerShell blocks `Activate.ps1`, run
 `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` in that window first.
 
+### Troubleshooting
+
+| Symptom | Cause and fix |
+|---|---|
+| `ImportError: DLL load failed while importing _pydantic_core` | A pre-release Python (for example `3.14.0a4`) is installed. Check with `python --version`; an `a`, `b` or `rc` in the version means a test build. Install a stable Python (3.12 or 3.13 are tested), then recreate the environment: `Remove-Item -Recurse -Force .venv`, `py -3.13 -m venv .venv`, and install again. |
+| PowerShell: "running scripts is disabled" | Run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` in that window, answer `Y`, then activate again. It affects only that window. |
+| Dashboard says **Meta AI · off** | The server did not see `MODEL_API_KEY`. Set it in the **same** terminal **before** starting `uvicorn`, or put it in `.env`, then restart the server and refresh the page. |
+| `live_ai_check.py` says `not_found` | Your account uses a different model id. Run `--list-models` and set `MODEL_NAME`. |
+
 ### Frontend development mode
 
 Run the API as above, then in a second terminal run `cd frontend && npm run dev` and open
