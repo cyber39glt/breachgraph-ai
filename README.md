@@ -10,8 +10,9 @@ whether the path is really broken.
 
 ![Overview](docs/screenshots/01-overview.png)
 
-> **Built for the Meta Global AI Developer Hackathon (26 Oct – 4 Nov 2026).** Everything in
-> this repository was written during the event; the commit history shows when. It runs on
+> **Built entirely during the Meta Global AI Developer Hackathon (26 Oct – 4 Nov 2026)** for
+> the **"Build for Your World"** problem statement. Nothing in this repository existed before
+> the event (see [Built during the hackathon](#built-during-the-hackathon)). It runs on
 > **synthetic data only** and never connects to, reads from or changes a real cloud account.
 
 ---
@@ -373,6 +374,23 @@ frontend/
 data/            sample_org.json (synthetic) · fixes/
 docs/            architecture.md · demo-script.md · design-system.md · screenshots/
 ```
+
+## Built during the hackathon
+
+Every file in this repository was created during the event, which opened with the kickoff
+on Mon 26 Oct 2026 at 12:00 PM ET. No earlier codebase was reused. The repository itself was
+created on 27 Oct. Commits, in Eastern Time:
+
+| When (ET) | Commit | What was built |
+|---|---|---|
+| Mon 26 Oct, 15:21 | `19fd2f7` | Synthetic dataset, deterministic risk engine, remediation simulator, CLI, tests |
+| Tue 27 Oct, 05:59 | `481c96b` | REST API, remediation candidates, Meta Model API integration |
+| Tue 27 Oct, 06:14 | `ba87b08` | GreenLanTech dashboard: graph explorer, investigation, simulator |
+| Tue 27 Oct, 06:17 | `92b698a` | Documentation, demo script, CI |
+| Wed 28 Oct onward | later commits | Licensing, live Meta API confirmation, troubleshooting, further features |
+
+Third-party open-source libraries (listed in [NOTICE](NOTICE)) are used unmodified as
+dependencies. The GreenLanTech brand belongs to the author.
 
 ## Licence
 
