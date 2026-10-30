@@ -69,7 +69,7 @@ Point at a round's two halves:
 
 Point at **Verified fix found in round N**, then click **Open in simulator**.
 
-## 2:15 – 2:50 · Verified remediation (Simulate fix)
+## 2:15 – 2:45 · Verified remediation (Simulate fix)
 
 > "The whole analysis re-runs on the changed copy."
 
@@ -82,7 +82,7 @@ Point, in order (numbers shown are for removing `AssumeAnyRole`; read the ones o
 5. **Other access removed**: *"It tells you what else changes, so nobody loses access they
    need by surprise."*
 
-## 2:50 – 3:00 · Close
+## 2:45 – 3:00 · Close
 
 > "BreachGraph AI: a deterministic engine for proof, a Muse Spark agent that proposes fixes,
 > and a simulator that verifies every one before anyone touches a permission. Built during
