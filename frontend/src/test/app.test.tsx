@@ -269,3 +269,60 @@ describe("fix agent", () => {
     expect(screen.getByText(/At most 2 Fix Agent runs per minute/)).toBeInTheDocument();
   });
 });
+
+describe("aws import", () => {
+  const report = {
+    account_id: "111122223333", counts: { users: 6, groups: 4, roles: 3, policies: 8, resources: 8 },
+    warnings: ["2 statements have Conditions, analysed as if the condition always passes (may over-report)."],
+    not_in_export: ["Resource-based policies (S3 bucket policies, KMS key policies, etc.) are not in this export."],
+  };
+
+  it("imports the sample export and shows what it cannot see", async () => {
+    routes["GET /api/demo/aws-sample"] = ok({ authorization_details: { UserDetailList: [] }, credential_report_csv: "user\n", context: {} });
+    routes["POST /api/import/aws"] = ok({ dataset: datasetFixture, report });
+    await open("#/dataset");
+    await userEvent.click(screen.getByRole("button", { name: "Try a sample AWS export" }));
+    expect(await screen.findByText("Imported AWS account 111122223333")).toBeInTheDocument();
+    expect(screen.getByText(/analysed as if the condition always passes/)).toBeInTheDocument();
+    expect(screen.getByText(/Resource-based policies/)).toBeInTheDocument();
+    expect(calls.find((c) => c.url === "POST /api/import/aws")?.body).toEqual(
+      { authorization_details: { UserDetailList: [] }, credential_report_csv: "user\n", context: {} });
+    // The converted dataset is then analysed like any upload.
+    expect(calls.filter((c) => c.url === "POST /api/analyze").at(-1)?.body).toEqual({ dataset: datasetFixture });
+  });
+
+  it("needs the authorization details file before importing", async () => {
+    await open("#/dataset");
+    expect(screen.getByRole("button", { name: "Import and analyse" })).toBeDisabled();
+  });
+
+  it("shows the server's reason when a file is not an AWS export", async () => {
+    routes["POST /api/import/aws"] = () => ({ status: 400, json: { error: "invalid_dataset",
+      message: "this does not look like `aws iam get-account-authorization-details` output" } });
+    await open("#/dataset");
+    const file = new File([JSON.stringify({ hello: "world" })], "iam.json", { type: "application/json" });
+    await act(async () => {
+      await userEvent.upload(screen.getByLabelText("Authorization details file"), file);
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Import and analyse" }));
+    expect(await screen.findByText("Import failed")).toBeInTheDocument();
+    expect(screen.getByText(/does not look like/)).toBeInTheDocument();
+  });
+});
+
+describe("large accounts", () => {
+  it("explains capped results and unmeasured candidates", async () => {
+    const big = {
+      ...analyzeFixture,
+      truncated: { attack_paths_total: 22300, attack_paths_shown: 300, access_total: 54171, access_shown: 5000 },
+      candidates: analyzeFixture.candidates.map((c) => ({ ...c, preview: null })),
+    };
+    routes["POST /api/analyze"] = ok(big);
+    await open("#/overview");
+    expect(screen.getByText("Large account: showing the highest-risk results")).toBeInTheDocument();
+    expect(screen.getByText(/All 22,300 attack paths were analysed/)).toBeInTheDocument();
+    window.location.hash = "#/simulate";
+    expect(await screen.findByText("Ranked by paths covered")).toBeInTheDocument();
+    expect(screen.getAllByText(/run to measure/).length).toBeGreaterThan(0);
+  });
+});

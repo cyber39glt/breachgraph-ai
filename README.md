@@ -12,8 +12,9 @@ whether the path is really broken.
 
 > **Built entirely during the Meta Global AI Developer Hackathon (26 Oct – 4 Nov 2026)** for
 > the **"Build for Your World"** problem statement. Nothing in this repository existed before
-> the event (see [Built during the hackathon](#built-during-the-hackathon)). It runs on
-> **synthetic data only** and never connects to, reads from or changes a real cloud account.
+> the event (see [Built during the hackathon](#built-during-the-hackathon)). It **never
+> connects to, reads from or changes a cloud account**: it analyses exported snapshots, either
+> the bundled synthetic demo or your own AWS IAM export, imported offline.
 
 ---
 
@@ -40,6 +41,7 @@ permission, is the path gone, and what else breaks?"*
 | **AI proposes, engine verifies** | Every fix the AI suggests is checked against the simulator before it is shown. You see whether it really breaks the path. |
 | **Fix Agent** | A verifiable agent loop: Muse Spark proposes a least-privilege fix, the simulator measures it, and the measurement goes back to the model to refine, up to 4 rounds. Each round streams live to the dashboard. Only the simulator decides when a fix works. |
 | **Remediation simulator** | Pick one or more changes and the whole analysis re-runs on a copy of the data. Before/after graphs, broken vs remaining paths, new paths, and *other access the change would remove*. |
+| **Import your own AWS account (offline)** | Upload the standard AWS IAM export (`get-account-authorization-details`, plus the credential report) and BreachGraph converts it. It never connects to AWS or sees credentials, and every import reports what it could not analyse. |
 | **Works without AI** | Analysis, graph, investigation and simulation all work with no API key. |
 
 ## Screenshots
@@ -54,6 +56,10 @@ All screenshots are of the running application with the bundled synthetic datase
 | Simulator: before and after | Simulator: path results |
 |---|---|
 | ![Before and after comparison](docs/screenshots/04-simulator-before-after.png) | ![Broken and remaining paths](docs/screenshots/05-simulator-results.png) |
+
+| AWS import (synthetic sample export) |
+|---|
+| ![AWS export import with its report](docs/screenshots/09-aws-import.png) |
 
 The AI panel shows "AI explanations are off" because the screenshots were taken without an
 API key. No AI output appears in the screenshots.
@@ -76,12 +82,12 @@ cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-pytest -q                                    # expect: 100 passed
+pytest -q                                    # expect: 120 passed
 
 # 2. Dashboard (build once; the API serves it)
 cd ../frontend
 npm ci
-npm test                                     # expect: 17 passed
+npm test                                     # expect: 21 passed
 npm run build
 
 # 3. Run
@@ -188,6 +194,66 @@ different, the live check will tell you; then set `MODEL_API_BASE_URL` or `MODEL
 allows at most 6 explanations and 2 Fix Agent runs (up to 4 calls each) per minute.
 
 ---
+
+## Analyse your own AWS account (offline)
+
+BreachGraph does not connect to AWS. You export your IAM data with read-only access and
+upload the files on the **Dataset** page (or convert them with the command line). Use only
+accounts you are authorised to assess, and never commit real exports to a repository.
+
+**1. Export** (AWS CloudShell, or the AWS CLI on your computer):
+
+```bash
+aws iam get-account-authorization-details > iam.json            # required
+aws iam generate-credential-report                              # optional: MFA, last sign-in
+aws iam get-credential-report --query Content --output text | base64 -d > credential-report.csv
+```
+
+The commands only read IAM data; the AWS-managed `IAMReadOnlyAccess` policy covers them.
+
+**2. Describe what matters** (optional `context.json`). AWS does not record which resources
+are sensitive or which users are contractors:
+
+```json
+{
+  "dataset_name": "Production account",
+  "external_identities": ["contractor-*"],
+  "resources": [
+    {"arn": "arn:aws:s3:::customer-data", "sensitivity": "critical", "name": "customer-data"},
+    {"arn": "arn:aws:dynamodb:*:*:table/payments*", "sensitivity": "high"}
+  ]
+}
+```
+
+Resources without a rule are imported as `medium`. Attack paths are reported for `high` and
+`critical` resources, so the context file is what makes the results meaningful.
+
+**3. Import:** on the Dataset page, **Import from AWS**. Or from the command line:
+
+```bash
+cd backend
+python -m breachgraph.importers.aws iam.json --credential-report credential-report.csv \
+  --context context.json -o dataset.json
+```
+
+**What the importer analyses:** users, groups, memberships, roles and their trust policies
+(same-account principals and `account:*`), and managed and inline policies (allow and deny),
+with MFA and last activity from the credential report.
+
+**What it reports but cannot analyse:** each import lists these, and whether each gap can
+hide access or overstate it:
+
+| Not analysed | Effect on results |
+|---|---|
+| Resource-based policies (bucket, KMS key policies…) | not in the export; **may under-report** |
+| `NotAction` / `NotResource` statements | skipped; **may under-report** |
+| Cross-account and federated trust | flagged, not modelled; **may under-report** |
+| Conditions, permission boundaries, SCPs | conditions treated as passing, boundaries/SCPs not applied; **may over-report** |
+| Permission usage ("last used") | not in this export, so nothing is called "unused" |
+
+`data/aws-sample/` holds a **synthetic** export of the demo company in AWS's real file
+formats (account `111122223333` is AWS's documentation placeholder). Importing it reproduces
+the same attack paths as the built-in demo; **Try a sample AWS export** loads it in one click.
 
 ## How it works
 
@@ -324,8 +390,8 @@ It is the top-ranked candidate in the simulator.
 
 | Suite | Command | Result (this commit) |
 |---|---|---|
-| Engine, simulator, API, AI integration, Fix Agent | `cd backend && pytest -q` | 100 passed |
-| Dashboard components and workflows | `cd frontend && npm test` | 17 passed |
+| Engine, simulator, API, AI integration, Fix Agent, AWS importer | `cd backend && pytest -q` | 120 passed |
+| Dashboard components and workflows | `cd frontend && npm test` | 21 passed |
 | Type check and production build | `cd frontend && npm run build` | passes |
 | Live browser check (console errors, CSP, screenshots) | `node frontend/e2e/screens.mjs <outdir>` with the API running | no errors |
 
@@ -342,11 +408,13 @@ It is the top-ranked candidate in the simulator.
 
 ## Security considerations
 
-- **Synthetic data only.** BreachGraph never connects to a cloud provider. There is no code
-  that could change real permissions; the simulator works on an in-memory copy.
+- **No cloud connection.** BreachGraph never connects to a cloud provider and never handles
+  cloud credentials. It analyses exported snapshots (synthetic, or your own AWS export,
+  processed in memory and not stored). There is no code that could change real permissions;
+  the simulator works on an in-memory copy.
 - **Secrets.** The API key lives only in the server environment or a git-ignored `.env`. It
   is never sent to the browser, returned in responses, logged or included in errors.
-- **Input validation.** Request bodies are capped at 1 MB. Datasets are size-limited and
+- **Input validation.** Request bodies are capped at 5 MB (20 MB for AWS imports). Datasets are size-limited and
   strictly validated, and unknown request fields are rejected. Finding ids must match a
   strict pattern.
 - **Browser hardening.** A strict Content-Security-Policy (`default-src 'self'`, no inline
@@ -360,6 +428,13 @@ It is the top-ranked candidate in the simulator.
 - **Simplified IAM model.** No resource-based policies, permission boundaries, SCPs,
   conditions, `NotAction`/`NotResource`, or session policies, and actions are not checked
   against resource types. Results describe the dataset's model, not a real account.
+- **The AWS importer was tested only with synthetic exports** written in AWS's documented
+  formats; it has not yet been validated against a real AWS account. Each import lists what it
+  could not analyse (see [Analyse your own AWS account](#analyse-your-own-aws-account-offline)).
+- **Very large accounts.** Analysis is in memory. A synthetic stress test with 300 users and
+  150 roles took about 5 s. Above 300 attack paths the dashboard lists the highest-risk ones
+  (totals and simulations still use all), and above 200 paths fix candidates are not
+  pre-measured.
 - **Partial-deny overlaps** are treated as allowed (over-reporting rather than hiding).
 - **Scores are a prioritisation heuristic**, not a likelihood of compromise.
 - **"Last used" and "last login"** values come from the dataset; nothing is collected live.
@@ -374,8 +449,9 @@ It is the top-ranked candidate in the simulator.
 
 ## Future work
 
-- Read-only importers for AWS IAM Access Analyzer / Azure Entra exports, so real data can be
-  analysed offline.
+- An Azure importer (Entra ID users and groups, RBAC role assignments), modelled for Azure's
+  scope-based permissions.
+- Usage data for AWS imports (IAM "last accessed" reports), so unused permissions can be flagged.
 - Resource policies, permission boundaries and condition keys.
 - Least-privilege policy *generation* (narrowing wildcards to the actions actually used),
   verified by the simulator.
@@ -385,13 +461,14 @@ It is the top-ranked candidate in the simulator.
 
 ```
 backend/
-  breachgraph/   engine.py · simulate.py · remediation.py · ai.py · api.py · model.py · cli.py
+  breachgraph/   engine.py · simulate.py · remediation.py · ai.py · agent.py · api.py · model.py · cli.py
+                 importers/aws.py (offline AWS IAM export importer)
   tests/         pytest suites (engine, API, AI with mocked replies)
   scripts/       live_ai_check.py · export_fixtures.py
 frontend/
   src/           React app (pages/, components/, styles/tokens.css = design tokens)
   e2e/           Playwright screenshot and console/CSP check
-data/            sample_org.json (synthetic) · fixes/
+data/            sample_org.json (synthetic) · fixes/ · aws-sample/ (synthetic AWS-format export)
 docs/            architecture.md · demo-script.md · design-system.md · screenshots/
 ```
 

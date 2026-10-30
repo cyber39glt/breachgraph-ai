@@ -1,8 +1,9 @@
 # Architecture
 
 BreachGraph AI is a small two-tier application: a Python API that holds all security logic,
-and a React dashboard that only displays results. There is no database. Each request carries a
-dataset (or uses the bundled synthetic demo), and results are recomputed deterministically.
+and a React dashboard that only displays results. There is no database and no cloud
+connection. Each request carries a dataset (the bundled synthetic demo, an uploaded dataset, or
+one converted from an AWS IAM export), and results are recomputed deterministically.
 
 ```mermaid
 sequenceDiagram
@@ -43,6 +44,7 @@ sequenceDiagram
 | `remediation.py` | Candidate cuts on attack paths, each measured by the simulator | No |
 | `ai.py` | Evidence bundle, prompt, Meta Model API call, error mapping, output validation, simulator verification | Yes (explain only) |
 | `agent.py` | Fix Agent loop: model proposes changes, simulator verifies, measured feedback to the model | Yes (proposals only) |
+| `importers/aws.py` | Converts an AWS IAM export (authorization details, credential report, context) into a dataset, with a report of what could not be analysed | No |
 | `api.py` | HTTP endpoints, request limits, security headers, credit protection, static dashboard | No |
 
 ## API
@@ -54,6 +56,8 @@ sequenceDiagram
 | POST | `/api/analyze` | Findings, evidence, graph, ranked remediation candidates |
 | POST | `/api/simulate` | Before/after analysis for 1–20 changes |
 | POST | `/api/explain` | Meta AI explanation for one attack-path finding |
+| POST | `/api/import/aws` | Convert an AWS IAM export into a dataset plus an import report (offline) |
+| GET | `/api/demo/aws-sample` | The synthetic AWS-format sample export |
 | POST | `/api/agent/fix` | Fix Agent: streams propose → simulate → feedback rounds (NDJSON) |
 
 Interactive docs: `http://127.0.0.1:8000/api/docs`.

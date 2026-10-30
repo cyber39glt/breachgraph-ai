@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api, ApiError } from "./api";
 import { buildIndex, type Index } from "./lookup";
-import type { AgentResult, AgentRound, AnalyzeResponse, Change, Dataset, Explanation } from "./types";
+import type { AgentResult, AgentRound, AnalyzeResponse, AwsImportReport, Change, Dataset, Explanation } from "./types";
 
 export type Page = "overview" | "graph" | "investigate" | "simulate" | "dataset";
 export const PAGES: Page[] = ["overview", "graph", "investigate", "simulate", "dataset"];
@@ -56,6 +56,9 @@ interface AppState {
   loadUpload: (d: Dataset) => Promise<void>;
   explanations: Record<string, ExplainState>;
   explain: (findingId: string) => Promise<void>;
+  /** The report from the last AWS import, shown on the Dataset page until another dataset loads. */
+  importReport: AwsImportReport | null;
+  setImportReport: (r: AwsImportReport | null) => void;
   agentRuns: Record<string, AgentState>;
   runAgent: (findingId: string) => Promise<void>;
   /** Changes queued for the simulator (e.g. from an AI suggestion or a candidate). */
@@ -75,6 +78,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [explanations, setExplanations] = useState<Record<string, ExplainState>>({});
   const [queued, setQueued] = useState<Change[] | null>(null);
   const [agentRuns, setAgentRuns] = useState<Record<string, AgentState>>({});
+  const [importReport, setImportReport] = useState<AwsImportReport | null>(null);
 
   const run = useCallback(async (source: Dataset | null) => {
     setLoading(true);
@@ -141,9 +145,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     uploaded, dataset, analysis, loading, error,
     index: dataset ? buildIndex(dataset) : null,
     reload: () => void run(uploaded).catch(() => undefined),
-    loadDemo: () => void run(null).catch(() => undefined),
+    loadDemo: () => {
+      setImportReport(null);
+      void run(null).catch(() => undefined);
+    },
     loadUpload: (d) => run(d),
     explanations, explain,
+    importReport, setImportReport,
     agentRuns, runAgent,
     queued,
     queueSimulation: (changes) => {
@@ -151,7 +159,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       navigate("simulate");
     },
     clearQueue: () => setQueued(null),
-  }), [uploaded, dataset, analysis, loading, error, run, explanations, explain, agentRuns, runAgent, queued]);
+  }), [uploaded, dataset, analysis, loading, error, run, explanations, explain, importReport, agentRuns, runAgent, queued]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

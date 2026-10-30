@@ -375,6 +375,20 @@ main { outline: none; }
 .raw summary { padding: 0; }
 .raw[open] summary { margin-bottom: var(--s-3); }
 
+/* ---- AWS import ------------------------------------------------------------------------ */
+.aws-import h2 { display: inline-flex; align-items: center; gap: var(--s-2); }
+.aws-steps { padding-left: 1.2em; display: grid; gap: var(--s-2); margin: 0 0 var(--s-4); }
+.aws-steps > li { min-width: 0; } /* long commands scroll inside their box */
+.cmd { display: block; margin-top: var(--s-1); padding: 6px 10px; border-radius: var(--radius-sm); background: var(--glt-charcoal); color: var(--code-text); font-family: var(--font-mono); font-size: 12px; overflow-x: auto; white-space: pre; }
+.file-picks { display: grid; gap: var(--s-2); grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: var(--s-4); }
+.file-pick { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: var(--s-1) var(--s-3); align-items: start; padding: var(--s-3); border: 1px dashed var(--rule); border-radius: var(--radius); }
+.file-pick svg { color: var(--glt-forest); margin-top: 2px; }
+.file-pick div { display: grid; min-width: 0; }
+.file-pick span { overflow-wrap: anywhere; }
+.file-pick .btn { grid-column: 2; justify-self: start; min-height: 34px; }
+.import-report { display: grid; gap: var(--s-3); margin-top: var(--s-4); }
+.import-report ul { margin: 0; padding-left: 1.1em; display: grid; gap: var(--s-1); }
+
 /* ---- Responsive ------------------------------------------------------------------------ */
 @media (max-width: 1180px) {
   .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -391,7 +405,7 @@ main { outline: none; }
   .sidebar nav a.active { box-shadow: inset 0 -3px 0 var(--glt-lime); }
   .topbar { position: static; padding: var(--s-3) var(--s-4); }
   .page { padding: var(--s-5) var(--s-4); gap: var(--s-5); }
-  .grid-2, .grid-3, .detail-grid { grid-template-columns: minmax(0, 1fr); }
+  .grid-2, .grid-3, .detail-grid, .file-picks { grid-template-columns: minmax(0, 1fr); }
   .card { padding: var(--s-5); }
   .table-wrap { margin: 0 calc(var(--s-5) * -1); }
   .table th:first-child, .table td:first-child { padding-left: var(--s-5); }

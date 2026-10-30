@@ -1,6 +1,7 @@
 import { Download, FileJson, RefreshCw, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { ApiError } from "../api";
+import { AwsImportCard } from "../components/AwsImportCard";
 import { CodeBlock, Eyebrow, Notice, PageHeader, Spinner } from "../components/ui";
 import { useApp } from "../state";
 import type { Dataset } from "../types";
@@ -8,7 +9,7 @@ import type { Dataset } from "../types";
 const MAX_UPLOAD_BYTES = 900_000;
 
 export function DatasetPage() {
-  const { dataset, uploaded, loadDemo, loadUpload, loading, analysis } = useApp();
+  const { dataset, uploaded, loadDemo, loadUpload, loading, analysis, setImportReport } = useApp();
   const input = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<{ tone: "error" | "success"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -29,6 +30,7 @@ export function DatasetPage() {
         throw new ApiError("invalid_json", "The file is not valid JSON.", 0);
       }
       await loadUpload(parsed as Dataset);
+      setImportReport(null);
       setStatus({ tone: "success", text: `Loaded ${file.name}. All pages now show its analysis.` });
     } catch (e) {
       setStatus({ tone: "error", text: e instanceof ApiError ? e.message : String(e) });
@@ -102,6 +104,8 @@ export function DatasetPage() {
           </details>
         </section>
       </div>
+
+      <AwsImportCard />
 
       <details className="card raw">
         <summary>View raw dataset JSON</summary>

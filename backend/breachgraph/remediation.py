@@ -12,10 +12,14 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from .engine import UNUSED_PERMISSION_DAYS
+from .engine import UNUSED_PERMISSION_DAYS, is_broad_resource
 from .simulate import simulate
 
 MAX_CANDIDATES = 25
+# Pre-measuring re-runs the whole analysis once per candidate. Above this many attack paths
+# that is too slow to do up front, so candidates are listed unmeasured (the simulator still
+# measures any you choose to run).
+PREVIEW_MAX_PATHS = 200
 
 
 def _statement(data: dict[str, Any], policy_id: str, sid: str) -> dict[str, Any] | None:
@@ -51,7 +55,7 @@ def candidates(data: dict[str, Any], analysis: dict[str, Any]) -> list[dict[str,
                 if "last_used_days" in st and (last is None or last > UNUSED_PERMISSION_DAYS):
                     notes.append("never used" if last is None else f"unused for {last} days")
                 if any(a == "*" or a.endswith(":*") for a in grant["actions"]) or any(
-                    "*" in r for r in grant["resources"]
+                    is_broad_resource(r) for r in grant["resources"]
                 ):
                     notes.append("wildcard")
             else:
@@ -61,8 +65,14 @@ def candidates(data: dict[str, Any], analysis: dict[str, Any]) -> list[dict[str,
             if f["id"] not in entry["on_paths"]:
                 entry["on_paths"].append(f["id"])
 
+    entries = list(found.values())
+    if analysis["summary"]["attack_paths"] > PREVIEW_MAX_PATHS:
+        # Most-used cut points first, so the likeliest high-impact fixes are at the top.
+        entries.sort(key=lambda e: (-len(e["on_paths"]), e["label"]))
+        return [{**e, "preview": None} for e in entries[:MAX_CANDIDATES]]
+
     out = []
-    for entry in list(found.values())[:MAX_CANDIDATES]:
+    for entry in entries[:MAX_CANDIDATES]:
         diff = simulate(data, [entry["change"]])["diff"]
         entry["preview"] = {
             "broken_paths": [p["id"] for p in diff["broken_paths"]],

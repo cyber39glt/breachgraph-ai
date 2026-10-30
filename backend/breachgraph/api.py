@@ -27,6 +27,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import __version__
 from .agent import MAX_ROUNDS, run_fix_agent
+from .importers.aws import import_aws
 from .ai import PROVIDER, AIError, AISettings, explain_finding
 from .engine import analyze
 from .model import DatasetError, load_dataset, validate_dataset
@@ -35,6 +36,7 @@ from .simulate import simulate
 
 ROOT = Path(__file__).resolve().parents[2]  # the breachgraph/ project folder
 DEMO_DATASET = ROOT / "data" / "sample_org.json"
+AWS_SAMPLE = ROOT / "data" / "aws-sample"
 FRONTEND_DIST = ROOT / "frontend" / "dist"
 
 # A local .env (git-ignored) may hold MODEL_API_KEY. Real environment variables win.
@@ -42,9 +44,12 @@ load_dotenv(ROOT / ".env", override=False)
 
 log = logging.getLogger("breachgraph.api")
 
-MAX_BODY_BYTES = 1_000_000
-MAX_ENTITIES = {"users": 300, "groups": 300, "roles": 200, "policies": 1000, "resources": 1000}
-MAX_STATEMENTS_PER_POLICY = 50
+MAX_BODY_BYTES = 5_000_000
+IMPORT_MAX_BODY_BYTES = 20_000_000  # raw AWS exports include large AWS-managed policies
+MAX_ENTITIES = {"users": 500, "groups": 500, "roles": 500, "policies": 3000, "resources": 3000}
+MAX_STATEMENTS_PER_POLICY = 200
+MAX_PATHS_RETURNED = 300
+MAX_ACCESS_RETURNED = 5000
 MAX_CHANGES = 20
 EXPLAIN_LIMIT_PER_MINUTE = 6
 AGENT_LIMIT_PER_MINUTE = 2  # each run makes up to MAX_ROUNDS model calls
@@ -73,6 +78,12 @@ class ExplainRequest(DatasetRequest):
 
 class AgentRequest(ExplainRequest):
     max_rounds: int = Field(default=MAX_ROUNDS, ge=1, le=MAX_ROUNDS)
+
+
+class AwsImportRequest(_Strict):
+    authorization_details: dict[str, Any] = Field(description="Output of `aws iam get-account-authorization-details`.")
+    credential_report_csv: str | None = Field(default=None, max_length=5_000_000)
+    context: dict[str, Any] | None = Field(default=None, description="Resource sensitivity and external identities.")
 
 
 # --- helpers ----------------------------------------------------------------------
@@ -124,6 +135,24 @@ def _dataset(req: DatasetRequest) -> dict[str, Any]:
     return data
 
 
+def trim_analysis(analysis: dict[str, Any]) -> dict[str, Any]:
+    """Cap what is sent to the browser for very large accounts. Totals stay exact."""
+    paths = [f for f in analysis["findings"] if f["type"] == "attack_path"]
+    if len(paths) <= MAX_PATHS_RETURNED and len(analysis["access"]) <= MAX_ACCESS_RETURNED:
+        return analysis
+    kept = {f["id"] for f in paths[:MAX_PATHS_RETURNED]}  # findings are already sorted by risk
+    shown_keys = {f["key"] for f in paths if f["id"] in kept}
+    access = [a for a in analysis["access"] if a["key"] in shown_keys]
+    access += [a for a in analysis["access"] if a["key"] not in shown_keys][: max(0, MAX_ACCESS_RETURNED - len(access))]
+    return {
+        **analysis,
+        "findings": [f for f in analysis["findings"] if f["type"] != "attack_path" or f["id"] in kept],
+        "access": access,
+        "truncated": {"attack_paths_total": len(paths), "attack_paths_shown": len(kept),
+                      "access_total": len(analysis["access"]), "access_shown": len(access)},
+    }
+
+
 def _fingerprint(data: dict[str, Any]) -> str:
     return hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
 
@@ -169,8 +198,10 @@ async def limits_and_headers(request: Request, call_next):
     if request.method == "POST":
         if length is None:
             return JSONResponse({"error": "length_required", "message": "Content-Length is required."}, 411)
-        if not length.isdigit() or int(length) > MAX_BODY_BYTES:
-            return JSONResponse({"error": "too_large", "message": "Request body is larger than 1 MB."}, 413)
+        limit = IMPORT_MAX_BODY_BYTES if request.url.path == "/api/import/aws" else MAX_BODY_BYTES
+        if not length.isdigit() or int(length) > limit:
+            return JSONResponse({"error": "too_large",
+                                 "message": f"Request body is larger than {limit // 1_000_000} MB."}, 413)
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "no-referrer"
@@ -215,16 +246,32 @@ def demo_dataset() -> dict[str, Any]:
     return _demo()
 
 
+@app.get("/api/demo/aws-sample")
+def demo_aws_sample() -> dict[str, Any]:
+    """A synthetic AWS IAM export (AWS's real file formats) for trying the importer without an account."""
+    return {
+        "authorization_details": json.loads((AWS_SAMPLE / "authorization-details.json").read_text(encoding="utf-8")),
+        "credential_report_csv": (AWS_SAMPLE / "credential-report.csv").read_text(encoding="utf-8"),
+        "context": json.loads((AWS_SAMPLE / "context.json").read_text(encoding="utf-8")),
+    }
+
+
 @app.post("/api/analyze")
 def analyze_endpoint(req: DatasetRequest) -> dict[str, Any]:
     data = _dataset(req)
     analysis = _analysis(data)
-    return {**analysis, "candidates": candidates(data, analysis), "ai": _ai_status()}
+    return {**trim_analysis(analysis), "candidates": candidates(data, analysis), "ai": _ai_status()}
 
 
 @app.post("/api/simulate")
 def simulate_endpoint(req: SimulateRequest) -> dict[str, Any]:
     result = simulate(_dataset(req), req.changes)
+    result["before"] = trim_analysis(result["before"])
+    result["after"] = trim_analysis(result["after"])
+    for key in ("broken_paths", "remaining_paths", "new_paths"):
+        result["diff"][key] = result["diff"][key][:MAX_PATHS_RETURNED]
+    for key in ("access_removed", "collateral_access_removed", "access_added"):
+        result["diff"][key] = result["diff"][key][:MAX_ACCESS_RETURNED]
     result["note"] = "Simulation only. No real permissions were changed."
     return result
 
@@ -247,6 +294,14 @@ def explain_endpoint(req: ExplainRequest) -> dict[str, Any]:
     _explain_cache.get_or(key, lambda: result)
     log.info("AI explanation generated for %s with %s", finding["id"], settings.model)
     return {**result, "cached": False}
+
+
+@app.post("/api/import/aws")
+def import_aws_endpoint(req: AwsImportRequest) -> dict[str, Any]:
+    """Convert an AWS IAM export into a dataset. Offline: nothing is sent to AWS or stored."""
+    data, report = import_aws(req.authorization_details, req.credential_report_csv, req.context)
+    _dataset(DatasetRequest(dataset=data))  # the same size limits as any uploaded dataset
+    return {"dataset": data, "report": report}
 
 
 @app.post("/api/agent/fix")

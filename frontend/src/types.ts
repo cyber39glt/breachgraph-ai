@@ -109,7 +109,9 @@ export interface AccessEntry {
 }
 
 export interface Analysis {
-  dataset: { name?: string; description?: string; synthetic?: boolean };
+  dataset: { name?: string; description?: string; synthetic?: boolean; source?: string; account_id?: string };
+  /** present when a very large account's results were capped for the browser */
+  truncated?: { attack_paths_total: number; attack_paths_shown: number; access_total: number; access_shown: number };
   summary: {
     identities: number;
     roles: number;
@@ -130,13 +132,14 @@ export interface Candidate {
   label: string;
   notes: string[];
   on_paths: string[];
+  /** null when the account is too large to pre-measure every candidate up front */
   preview: {
     broken_paths: string[];
     new_paths: string[];
     collateral_access_removed: string[];
     risk_before: number;
     risk_after: number;
-  };
+  } | null;
 }
 
 export interface AIStatus {
@@ -242,3 +245,16 @@ export type AgentEvent =
   | ({ type: "round" } & AgentRound)
   | ({ type: "result" } & AgentResult)
   | { type: "error"; error: string; message: string };
+
+export interface AwsExport {
+  authorization_details: unknown;
+  credential_report_csv?: string | null;
+  context?: unknown;
+}
+
+export interface AwsImportReport {
+  account_id: string | null;
+  counts: Record<"users" | "groups" | "roles" | "policies" | "resources", number>;
+  warnings: string[];
+  not_in_export: string[];
+}

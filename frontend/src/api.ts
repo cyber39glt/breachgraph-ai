@@ -1,4 +1,6 @@
-import type { AgentEvent, AIStatus, AnalyzeResponse, Change, Dataset, Explanation, SimulationResult } from "./types";
+import type {
+  AgentEvent, AIStatus, AnalyzeResponse, AwsExport, AwsImportReport, Change, Dataset, Explanation, SimulationResult,
+} from "./types";
 
 /** An error the API reported, with its stable code (e.g. "not_configured", "rate_limited"). */
 export class ApiError extends Error {
@@ -80,6 +82,8 @@ export const api = {
     request<SimulationResult>("/api/simulate", { ...withDataset(dataset), changes }),
   explain: (dataset: Dataset | null, findingId: string) =>
     request<Explanation>("/api/explain", { ...withDataset(dataset), finding_id: findingId }),
+  awsSample: () => request<AwsExport>("/api/demo/aws-sample"),
+  importAws: (files: AwsExport) => request<{ dataset: Dataset; report: AwsImportReport }>("/api/import/aws", files),
   fixAgent: (dataset: Dataset | null, findingId: string, onEvent: (e: AgentEvent) => void) =>
     stream("/api/agent/fix", { ...withDataset(dataset), finding_id: findingId }, onEvent),
 };

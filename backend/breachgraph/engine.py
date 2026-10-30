@@ -20,6 +20,7 @@ No AI is involved here. The AI layer only explains what this module has verified
 from __future__ import annotations
 
 import hashlib
+import re
 from collections import deque
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
@@ -75,6 +76,18 @@ def _service(action: str) -> str:
     return action.split(":", 1)[0].lower() if ":" in action else "*"
 
 
+def is_broad_resource(pattern: str) -> bool:
+    """Does this resource pattern widen *which* resources are covered?
+
+    "*" and "res:s3-*" do. An S3 object pattern inside one named bucket
+    ("res:arn:aws:s3:::reports/*") does not: it is the normal way to scope access to a bucket.
+    """
+    if "*" not in pattern and "?" not in pattern:
+        return False
+    m = re.match(r"^res:arn:aws[\w-]*:s3:::([^/]+)/", pattern)
+    return not (m and "*" not in m.group(1) and "?" not in m.group(1))
+
+
 def _stable_id(prefix: str, key: str) -> str:
     return f"{prefix}-{hashlib.sha256(key.encode()).hexdigest()[:8].upper()}"
 
@@ -109,6 +122,11 @@ class Analyzer:
         for g in data["groups"]:
             for member in g.get("members", []):
                 self.groups_of[member].append(g["id"])
+        # A session's permissions do not depend on who reached it, so each is computed once.
+        self._grants: dict[str, list[Grant]] = {}
+        self._access: dict[tuple[str, str], tuple[str, Grant, str] | None] = {}
+        self._assume: dict[tuple[str, str], dict[str, Any] | None] = {}
+        self._reachable: dict[str, list[tuple[str, tuple[str, Grant, str]]]] = {}
 
     # --- names -------------------------------------------------------------
     def name(self, node_id: str) -> str:
@@ -128,8 +146,10 @@ class Analyzer:
         return grants
 
     def session_grants(self, session: str) -> list[Grant]:
-        holders = [session] + self.groups_of.get(session, [])
-        return [g for h in holders for g in self._holder_grants(h)]
+        if session not in self._grants:
+            holders = [session] + self.groups_of.get(session, [])
+            self._grants[session] = [g for h in holders for g in self._holder_grants(h)]
+        return self._grants[session]
 
     @staticmethod
     def _denied(grants: list[Grant], action_pattern: str, target: str) -> Grant | None:
@@ -147,6 +167,19 @@ class Analyzer:
 
     def resource_access(self, session: str, resource: str) -> tuple[str, Grant, str] | None:
         """Highest access level the session has on a data resource, with its evidence."""
+        key = (session, resource)
+        if key not in self._access:
+            self._access[key] = self._resource_access(session, resource)
+        return self._access[key]
+
+    def reachable_resources(self, session: str) -> list[tuple[str, tuple[str, Grant, str]]]:
+        """Every resource this session can act on, computed once per session."""
+        if session not in self._reachable:
+            self._reachable[session] = [(r, found) for r in self.resources
+                                        if (found := self.resource_access(session, r))]
+        return self._reachable[session]
+
+    def _resource_access(self, session: str, resource: str) -> tuple[str, Grant, str] | None:
         grants = self.session_grants(session)
         best: tuple[str, Grant, str] | None = None
         for g in grants:
@@ -163,6 +196,12 @@ class Analyzer:
         return best
 
     def assume_evidence(self, session: str, role: str) -> dict[str, Any] | None:
+        key = (session, role)
+        if key not in self._assume:
+            self._assume[key] = self._assume_evidence(session, role)
+        return self._assume[key]
+
+    def _assume_evidence(self, session: str, role: str) -> dict[str, Any] | None:
         """Why `session` can assume `role`, or None if it cannot.
 
         Same-account AWS semantics: a trust policy naming the principal is enough on
@@ -239,11 +278,7 @@ class Analyzer:
 
         best: dict[str, dict[str, Any]] = {}
         for session, chain in chains.items():
-            for resource in self.resources:
-                found = self.resource_access(session, resource)
-                if not found:
-                    continue
-                level, grant, action = found
+            for resource, (level, grant, action) in self.reachable_resources(session):
                 candidate = {
                     "user": user, "resource": resource, "level": level,
                     "roles": roles_on_chain[session],
@@ -324,7 +359,7 @@ class Analyzer:
                 base = {"policy": policy["id"], "sid": st["sid"], "holders": holders,
                         "statement": st, "related_findings": related}
                 wild_actions = [a for a in st["actions"] if a == "*" or a.endswith(":*")]
-                wild_resources = [r for r in st["resources"] if "*" in r]
+                wild_resources = [r for r in st["resources"] if is_broad_resource(r)]
                 if wild_actions or wild_resources:
                     parts = []
                     if wild_actions:
@@ -338,8 +373,9 @@ class Analyzer:
                                 "title": f"Wildcard {' and '.join(parts)} in {ref}",
                                 "facts": [f"Statement {st['sid']} in policy {policy['name']} allows "
                                           f"{', '.join(st['actions'])} on {', '.join(st['resources'])}."]})
+                # A missing "last_used_days" means "not recorded" (e.g. an AWS export), not "never used".
                 last = st.get("last_used_days")
-                if last is None or last > UNUSED_PERMISSION_DAYS:
+                if "last_used_days" in st and (last is None or last > UNUSED_PERMISSION_DAYS):
                     when = "has never been used" if last is None else f"was last used {last} days ago"
                     key = f"unused:{policy['id']}:{st['sid']}"
                     out.append({**base, "id": _stable_id("UNUSED", key), "key": key,

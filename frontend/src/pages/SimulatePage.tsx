@@ -174,8 +174,7 @@ export function SimulatePage() {
     const keys = new Set(queued.map(keyOf));
     const known = new Set(analysis.candidates.map((c) => keyOf(c.change)));
     setAiOptions(queued.filter((c) => !known.has(keyOf(c))).map((change) => ({
-      change, label: describe(change), notes: [], on_paths: [], fromAI: true,
-      preview: { broken_paths: [], new_paths: [], collateral_access_removed: [], risk_before: 0, risk_after: 0 },
+      change, label: describe(change), notes: [], on_paths: [], fromAI: true, preview: null,
     })));
     setSelected(keys);
     clearQueue();
@@ -204,7 +203,7 @@ export function SimulatePage() {
         <section className="card candidates">
           <div className="card-head">
             <h2>Candidate changes</h2>
-            <VerifiedLabel>Ranked by measured effect</VerifiedLabel>
+            <VerifiedLabel>{options.some((o) => o.preview && !o.fromAI) ? "Ranked by measured effect" : "Ranked by paths covered"}</VerifiedLabel>
           </div>
           {options.length === 0 ? (
             <Empty title="Nothing to fix">There are no attack paths, so there is nothing to cut.</Empty>
@@ -219,7 +218,13 @@ export function SimulatePage() {
                     <label htmlFor={id}>
                       <strong>{o.label}</strong>
                       <span className="chips">
-                        {o.fromAI ? <Chip tone="dark"><Sparkles size={12} aria-hidden /> Suggested by AI · not pre-measured</Chip> : (
+                        {o.fromAI ? <Chip tone="dark"><Sparkles size={12} aria-hidden /> Suggested by AI · not pre-measured</Chip>
+                        : !o.preview ? (
+                          <>
+                            <Chip>On {o.on_paths.length} attack path{o.on_paths.length === 1 ? "" : "s"} · run to measure</Chip>
+                            {o.notes.map((n) => <Chip key={n} tone="dark">{n}</Chip>)}
+                          </>
+                        ) : (
                           <>
                             <Chip tone={o.preview.broken_paths.length ? "safe" : "neutral"}>
                               Breaks {o.preview.broken_paths.length} path{o.preview.broken_paths.length === 1 ? "" : "s"}

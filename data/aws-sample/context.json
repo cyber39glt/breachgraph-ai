@@ -1,0 +1,51 @@
+{
+  "dataset_name": "Halcyon Payments (fictional AWS export)",
+  "synthetic": true,
+  "external_identities": [
+    "jordan.reyes"
+  ],
+  "resources": [
+    {
+      "arn": "arn:aws:s3:::halcyon-customer-pii",
+      "sensitivity": "critical",
+      "name": "customer-pii",
+      "data_classification": "Cardholder names, addresses, partial PANs (synthetic)"
+    },
+    {
+      "arn": "arn:aws:kms:eu-west-1:111122223333:key/1a2b3c4d-0000-4000-8000-000000000001",
+      "sensitivity": "critical",
+      "name": "pii-encryption-key",
+      "data_classification": "Encrypts the customer-pii bucket"
+    },
+    {
+      "arn": "arn:aws:rds:eu-west-1:111122223333:db:payments-ledger",
+      "sensitivity": "critical",
+      "data_classification": "Payment transactions (synthetic)"
+    },
+    {
+      "arn": "arn:aws:s3:::halcyon-finance-reports",
+      "sensitivity": "high",
+      "name": "finance-reports"
+    },
+    {
+      "arn": "arn:aws:dynamodb:eu-west-1:111122223333:table/support-tickets",
+      "sensitivity": "high",
+      "data_classification": "Customer support conversations (synthetic)"
+    },
+    {
+      "arn": "arn:aws:s3:::halcyon-audit-logs",
+      "sensitivity": "high",
+      "name": "audit-logs"
+    },
+    {
+      "arn": "arn:aws:s3:::halcyon-analytics-warehouse",
+      "sensitivity": "medium",
+      "name": "analytics-warehouse"
+    },
+    {
+      "arn": "arn:aws:s3:::halcyon-build-artifacts",
+      "sensitivity": "low",
+      "name": "build-artifacts"
+    }
+  ]
+}

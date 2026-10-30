@@ -98,18 +98,23 @@ function EngineFixes({ finding }: { finding: PathFinding }) {
   if (fixes.length === 0) return null;
   return (
     <div className="card">
-      <div className="card-head"><h2>Ways to cut this path</h2><VerifiedLabel>Measured by simulator</VerifiedLabel></div>
+      <div className="card-head"><h2>Ways to cut this path</h2><VerifiedLabel>{fixes.some((c) => c.preview) ? "Measured by simulator" : "Engine candidates"}</VerifiedLabel></div>
       <ul className="fixes">
         {fixes.map((c) => {
-          const breaksThis = c.preview.broken_paths.includes(finding.id);
+          const p = c.preview;
+          const breaksThis = p?.broken_paths.includes(finding.id);
           return (
             <li key={c.label}>
               <div>
                 <strong>{c.label}</strong>
                 <p className="chips">
-                  <Chip tone={breaksThis ? "safe" : "risk"}>{breaksThis ? "Breaks this path" : "Does not break this path"}</Chip>
-                  <Chip>{c.preview.broken_paths.length} path{c.preview.broken_paths.length === 1 ? "" : "s"} broken</Chip>
-                  {c.preview.collateral_access_removed.length > 0 && <Chip>{c.preview.collateral_access_removed.length} other access removed</Chip>}
+                  {p ? (
+                    <>
+                      <Chip tone={breaksThis ? "safe" : "risk"}>{breaksThis ? "Breaks this path" : "Does not break this path"}</Chip>
+                      <Chip>{p.broken_paths.length} path{p.broken_paths.length === 1 ? "" : "s"} broken</Chip>
+                      {p.collateral_access_removed.length > 0 && <Chip>{p.collateral_access_removed.length} other access removed</Chip>}
+                    </>
+                  ) : <Chip>On {c.on_paths.length} attack path{c.on_paths.length === 1 ? "" : "s"} · simulate to measure</Chip>}
                   {c.notes.map((n) => <Chip key={n} tone="dark">{n}</Chip>)}
                 </p>
               </div>

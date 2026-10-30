@@ -1,6 +1,6 @@
 import { ArrowRight, ChevronDown, ChevronRight, FlaskConical, ScanSearch } from "lucide-react";
 import { Fragment, useState } from "react";
-import { CodeBlock, Empty, Entity, Eyebrow, PageHeader, SeverityBadge, VerifiedLabel } from "../components/ui";
+import { CodeBlock, Empty, Entity, Eyebrow, Notice, PageHeader, SeverityBadge, VerifiedLabel } from "../components/ui";
 import { isPath, isStatement } from "../lookup";
 import { navigate, useApp } from "../state";
 import type { Finding, PathFinding, Severity } from "../types";
@@ -134,6 +134,12 @@ export function OverviewPage() {
   return (
     <div className="page">
       <PageHeader eyebrow="Identity attack surface" title="Who can reach your most sensitive data" />
+      {analysis.truncated && (
+        <Notice tone="info" title="Large account: showing the highest-risk results">
+          All {analysis.truncated.attack_paths_total.toLocaleString()} attack paths were analysed; the{" "}
+          {analysis.truncated.attack_paths_shown} highest-risk are listed here. Totals and simulations use every path.
+        </Notice>
+      )}
 
       <section className="grid-4" aria-label="Key metrics">
         <Metric label="Identities analysed" value={s.identities} sub={`${dataset.groups.length} groups · ${s.roles} roles`} />

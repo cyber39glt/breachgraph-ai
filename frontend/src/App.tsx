@@ -45,7 +45,7 @@ function Sidebar({ page }: { page: Page }) {
       </nav>
       <div className="sidebar-foot">
         <p className="eyebrow eyebrow-lime">Read-only</p>
-        <p>Synthetic data. Simulations never change real permissions.</p>
+        <p>Analyses exported snapshots, never live accounts. Simulations never change real permissions.</p>
       </div>
     </aside>
   );
@@ -60,6 +60,7 @@ function TopBar() {
         <span className="eyebrow">Dataset</span>
         <strong>{analysis?.dataset.name ?? "Loading…"}</strong>
         {analysis?.dataset.synthetic && <span className="chip chip-dark">Synthetic</span>}
+        {analysis?.dataset.source === "aws-import" && <span className="chip chip-neutral">AWS export</span>}
         {uploaded && <span className="chip chip-neutral">Uploaded</span>}
       </div>
       <div className="topbar-actions">

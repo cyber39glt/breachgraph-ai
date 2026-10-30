@@ -1,0 +1,519 @@
+{
+  "UserDetailList": [
+    {
+      "Path": "/",
+      "UserName": "jordan.reyes",
+      "UserId": "AIDAEXAMPLE00000001",
+      "Arn": "arn:aws:iam::111122223333:user/jordan.reyes",
+      "CreateDate": "2026-02-03T09:00:00+00:00",
+      "UserPolicyList": [],
+      "GroupList": [
+        "ci-maintainers"
+      ],
+      "AttachedManagedPolicies": [],
+      "Tags": []
+    },
+    {
+      "Path": "/",
+      "UserName": "ava.thompson",
+      "UserId": "AIDAEXAMPLE00000002",
+      "Arn": "arn:aws:iam::111122223333:user/ava.thompson",
+      "CreateDate": "2026-02-03T09:00:00+00:00",
+      "UserPolicyList": [],
+      "GroupList": [
+        "ci-maintainers"
+      ],
+      "AttachedManagedPolicies": [],
+      "Tags": []
+    },
+    {
+      "Path": "/",
+      "UserName": "priya.nair",
+      "UserId": "AIDAEXAMPLE00000003",
+      "Arn": "arn:aws:iam::111122223333:user/priya.nair",
+      "CreateDate": "2026-02-03T09:00:00+00:00",
+      "UserPolicyList": [],
+      "GroupList": [
+        "data-engineering"
+      ],
+      "AttachedManagedPolicies": [],
+      "Tags": []
+    },
+    {
+      "Path": "/",
+      "UserName": "sam.okafor",
+      "UserId": "AIDAEXAMPLE00000004",
+      "Arn": "arn:aws:iam::111122223333:user/sam.okafor",
+      "CreateDate": "2026-02-03T09:00:00+00:00",
+      "UserPolicyList": [
+        {
+          "PolicyName": "finance-reports-read",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "ReadFinanceReports",
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::halcyon-finance-reports/*"
+              }
+            ]
+          }
+        }
+      ],
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "Tags": []
+    },
+    {
+      "Path": "/",
+      "UserName": "lena.fischer",
+      "UserId": "AIDAEXAMPLE00000005",
+      "Arn": "arn:aws:iam::111122223333:user/lena.fischer",
+      "CreateDate": "2026-02-03T09:00:00+00:00",
+      "UserPolicyList": [],
+      "GroupList": [
+        "security-auditors"
+      ],
+      "AttachedManagedPolicies": [],
+      "Tags": []
+    },
+    {
+      "Path": "/",
+      "UserName": "marco.bianchi",
+      "UserId": "AIDAEXAMPLE00000006",
+      "Arn": "arn:aws:iam::111122223333:user/marco.bianchi",
+      "CreateDate": "2026-02-03T09:00:00+00:00",
+      "UserPolicyList": [],
+      "GroupList": [
+        "support-legacy"
+      ],
+      "AttachedManagedPolicies": [],
+      "Tags": []
+    }
+  ],
+  "GroupDetailList": [
+    {
+      "Path": "/",
+      "GroupName": "ci-maintainers",
+      "GroupId": "AGPAEXAMPLE00000001",
+      "Arn": "arn:aws:iam::111122223333:group/ci-maintainers",
+      "CreateDate": "2026-01-12T10:00:00+00:00",
+      "GroupPolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "ci-assume-deploy",
+          "PolicyArn": "arn:aws:iam::111122223333:policy/ci-assume-deploy"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "GroupName": "data-engineering",
+      "GroupId": "AGPAEXAMPLE00000002",
+      "Arn": "arn:aws:iam::111122223333:group/data-engineering",
+      "CreateDate": "2026-01-12T10:00:00+00:00",
+      "GroupPolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "data-eng-assume",
+          "PolicyArn": "arn:aws:iam::111122223333:policy/data-eng-assume"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "GroupName": "support-legacy",
+      "GroupId": "AGPAEXAMPLE00000003",
+      "Arn": "arn:aws:iam::111122223333:group/support-legacy",
+      "CreateDate": "2026-01-12T10:00:00+00:00",
+      "GroupPolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "support-ticket-export",
+          "PolicyArn": "arn:aws:iam::111122223333:policy/support-ticket-export"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "GroupName": "security-auditors",
+      "GroupId": "AGPAEXAMPLE00000004",
+      "Arn": "arn:aws:iam::111122223333:group/security-auditors",
+      "CreateDate": "2026-01-12T10:00:00+00:00",
+      "GroupPolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "security-audit-read",
+          "PolicyArn": "arn:aws:iam::111122223333:policy/security-audit-read"
+        }
+      ]
+    }
+  ],
+  "RoleDetailList": [
+    {
+      "Path": "/",
+      "RoleName": "ci-deploy",
+      "RoleId": "AROAEXAMPLE00000001",
+      "Arn": "arn:aws:iam::111122223333:role/ci-deploy",
+      "CreateDate": "2026-01-12T10:00:00+00:00",
+      "Description": "Assumed by CI pipelines to deploy application stacks.",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "InstanceProfileList": [],
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "ci-deploy-permissions",
+          "PolicyArn": "arn:aws:iam::111122223333:policy/ci-deploy-permissions"
+        }
+      ],
+      "Tags": [],
+      "RoleLastUsed": {
+        "LastUsedDate": "2026-10-26T08:00:00+00:00",
+        "Region": "eu-west-1"
+      }
+    },
+    {
+      "Path": "/",
+      "RoleName": "data-platform-admin",
+      "RoleId": "AROAEXAMPLE00000002",
+      "Arn": "arn:aws:iam::111122223333:role/data-platform-admin",
+      "CreateDate": "2026-01-12T10:00:00+00:00",
+      "Description": "Break-glass administration for the data platform.",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "InstanceProfileList": [],
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "data-platform-full",
+          "PolicyArn": "arn:aws:iam::111122223333:policy/data-platform-full"
+        }
+      ],
+      "Tags": [],
+      "RoleLastUsed": {
+        "LastUsedDate": "2026-10-26T08:00:00+00:00",
+        "Region": "eu-west-1"
+      }
+    },
+    {
+      "Path": "/",
+      "RoleName": "analytics-reader",
+      "RoleId": "AROAEXAMPLE00000003",
+      "Arn": "arn:aws:iam::111122223333:role/analytics-reader",
+      "CreateDate": "2026-01-12T10:00:00+00:00",
+      "Description": "Read access to the de-identified analytics warehouse.",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "InstanceProfileList": [],
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "analytics-read",
+          "PolicyArn": "arn:aws:iam::111122223333:policy/analytics-read"
+        }
+      ],
+      "Tags": [],
+      "RoleLastUsed": {
+        "LastUsedDate": "2026-10-26T08:00:00+00:00",
+        "Region": "eu-west-1"
+      }
+    }
+  ],
+  "Policies": [
+    {
+      "PolicyName": "ci-assume-deploy",
+      "PolicyId": "ANPAEXAMPLE00000001",
+      "Arn": "arn:aws:iam::111122223333:policy/ci-assume-deploy",
+      "Path": "/",
+      "DefaultVersionId": "v1",
+      "AttachmentCount": 1,
+      "PermissionsBoundaryUsageCount": 0,
+      "IsAttachable": true,
+      "CreateDate": "2026-01-12T10:00:00+00:00",
+      "UpdateDate": "2026-01-12T10:00:00+00:00",
+      "PolicyVersionList": [
+        {
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "AssumeDeployRole",
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": "arn:aws:iam::111122223333:role/ci-deploy"
+              }
+            ]
+          },
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "CreateDate": "2026-01-12T10:00:00+00:00"
+        }
+      ]
+    },
+    {
+      "PolicyName": "ci-deploy-permissions",
+      "PolicyId": "ANPAEXAMPLE00000002",
+      "Arn": "arn:aws:iam::111122223333:policy/ci-deploy-permissions",
+      "Path": "/",
+      "DefaultVersionId": "v1",
+      "AttachmentCount": 1,
+      "PermissionsBoundaryUsageCount": 0,
+      "IsAttachable": true,
+      "CreateDate": "2026-01-12T10:00:00+00:00",
+      "UpdateDate": "2026-01-12T10:00:00+00:00",
+      "PolicyVersionList": [
+        {
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "DeployArtifacts",
+                "Effect": "Allow",
+                "Action": [
+                  "s3:PutObject",
+                  "s3:GetObject"
+                ],
+                "Resource": [
+                  "arn:aws:s3:::halcyon-build-artifacts",
+                  "arn:aws:s3:::halcyon-build-artifacts/*"
+                ]
+              },
+              {
+                "Sid": "AssumeAnyRole",
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": "*"
+              }
+            ]
+          },
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "CreateDate": "2026-01-12T10:00:00+00:00"
+        }
+      ]
+    },
+    {
+      "PolicyName": "data-platform-full",
+      "PolicyId": "ANPAEXAMPLE00000003",
+      "Arn": "arn:aws:iam::111122223333:policy/data-platform-full",
+      "Path": "/",
+      "DefaultVersionId": "v1",
+      "AttachmentCount": 1,
+      "PermissionsBoundaryUsageCount": 0,
+      "IsAttachable": true,
+      "CreateDate": "2026-01-12T10:00:00+00:00",
+      "UpdateDate": "2026-01-12T10:00:00+00:00",
+      "PolicyVersionList": [
+        {
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "FullS3",
+                "Effect": "Allow",
+                "Action": "s3:*",
+                "Resource": [
+                  "arn:aws:s3:::halcyon-customer-pii",
+                  "arn:aws:s3:::halcyon-customer-pii/*",
+                  "arn:aws:s3:::halcyon-analytics-warehouse",
+                  "arn:aws:s3:::halcyon-analytics-warehouse/*"
+                ]
+              },
+              {
+                "Sid": "DecryptPii",
+                "Effect": "Allow",
+                "Action": "kms:Decrypt",
+                "Resource": "arn:aws:kms:eu-west-1:111122223333:key/1a2b3c4d-0000-4000-8000-000000000001"
+              }
+            ]
+          },
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "CreateDate": "2026-01-12T10:00:00+00:00"
+        }
+      ]
+    },
+    {
+      "PolicyName": "data-eng-assume",
+      "PolicyId": "ANPAEXAMPLE00000004",
+      "Arn": "arn:aws:iam::111122223333:policy/data-eng-assume",
+      "Path": "/",
+      "DefaultVersionId": "v1",
+      "AttachmentCount": 1,
+      "PermissionsBoundaryUsageCount": 0,
+      "IsAttachable": true,
+      "CreateDate": "2026-01-12T10:00:00+00:00",
+      "UpdateDate": "2026-01-12T10:00:00+00:00",
+      "PolicyVersionList": [
+        {
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "AssumeAnalyticsReader",
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": "arn:aws:iam::111122223333:role/analytics-reader"
+              }
+            ]
+          },
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "CreateDate": "2026-01-12T10:00:00+00:00"
+        }
+      ]
+    },
+    {
+      "PolicyName": "analytics-read",
+      "PolicyId": "ANPAEXAMPLE00000005",
+      "Arn": "arn:aws:iam::111122223333:policy/analytics-read",
+      "Path": "/",
+      "DefaultVersionId": "v1",
+      "AttachmentCount": 1,
+      "PermissionsBoundaryUsageCount": 0,
+      "IsAttachable": true,
+      "CreateDate": "2026-01-12T10:00:00+00:00",
+      "UpdateDate": "2026-01-12T10:00:00+00:00",
+      "PolicyVersionList": [
+        {
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "ReadWarehouse",
+                "Effect": "Allow",
+                "Action": [
+                  "s3:GetObject",
+                  "s3:ListBucket"
+                ],
+                "Resource": [
+                  "arn:aws:s3:::halcyon-analytics-warehouse",
+                  "arn:aws:s3:::halcyon-analytics-warehouse/*"
+                ]
+              }
+            ]
+          },
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "CreateDate": "2026-01-12T10:00:00+00:00"
+        }
+      ]
+    },
+    {
+      "PolicyName": "support-ticket-export",
+      "PolicyId": "ANPAEXAMPLE00000006",
+      "Arn": "arn:aws:iam::111122223333:policy/support-ticket-export",
+      "Path": "/",
+      "DefaultVersionId": "v1",
+      "AttachmentCount": 1,
+      "PermissionsBoundaryUsageCount": 0,
+      "IsAttachable": true,
+      "CreateDate": "2026-01-12T10:00:00+00:00",
+      "UpdateDate": "2026-01-12T10:00:00+00:00",
+      "PolicyVersionList": [
+        {
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "ExportTickets",
+                "Effect": "Allow",
+                "Action": [
+                  "dynamodb:Scan",
+                  "dynamodb:Query"
+                ],
+                "Resource": "arn:aws:dynamodb:eu-west-1:111122223333:table/support-tickets"
+              },
+              {
+                "Sid": "ReadPaymentsDb",
+                "Effect": "Allow",
+                "Action": "rds:*",
+                "Resource": "arn:aws:rds:eu-west-1:111122223333:db:payments-ledger"
+              }
+            ]
+          },
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "CreateDate": "2026-01-12T10:00:00+00:00"
+        }
+      ]
+    },
+    {
+      "PolicyName": "security-audit-read",
+      "PolicyId": "ANPAEXAMPLE00000007",
+      "Arn": "arn:aws:iam::111122223333:policy/security-audit-read",
+      "Path": "/",
+      "DefaultVersionId": "v1",
+      "AttachmentCount": 1,
+      "PermissionsBoundaryUsageCount": 0,
+      "IsAttachable": true,
+      "CreateDate": "2026-01-12T10:00:00+00:00",
+      "UpdateDate": "2026-01-12T10:00:00+00:00",
+      "PolicyVersionList": [
+        {
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "ReadAuditLogs",
+                "Effect": "Allow",
+                "Action": [
+                  "s3:GetObject",
+                  "s3:ListBucket"
+                ],
+                "Resource": [
+                  "arn:aws:s3:::halcyon-*",
+                  "arn:aws:s3:::halcyon-*/*"
+                ]
+              },
+              {
+                "Sid": "NoPiiAccess",
+                "Effect": "Deny",
+                "Action": "s3:*",
+                "Resource": [
+                  "arn:aws:s3:::halcyon-customer-pii",
+                  "arn:aws:s3:::halcyon-customer-pii/*"
+                ]
+              }
+            ]
+          },
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "CreateDate": "2026-01-12T10:00:00+00:00"
+        }
+      ]
+    }
+  ]
+}
