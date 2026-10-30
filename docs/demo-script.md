@@ -57,6 +57,11 @@ Point at **Assumptions (not verified)**, then at a suggested fix and its chip:
 > "The AI's fixes aren't taken on trust. Each is run through our simulator. This one says
 > 'Simulator: breaks this path'. That's the engine talking, not the model."
 
+If the AI suggests narrowing `FullS3` (as it did in the live check), add:
+
+> "That fix breaks 2 paths. The engine's top-ranked fix, removing the unused wildcard, breaks
+> 4. The AI gives a reasonable idea, and the simulator tells us which fix is better."
+
 ## 2:05 – 2:45 · Verified remediation (Simulate fix)
 
 Click **Open in simulator** (or select the first candidate and run it).

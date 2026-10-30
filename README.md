@@ -168,9 +168,9 @@ python scripts/live_ai_check.py --list-models   # which model ids your key can u
 python scripts/live_ai_check.py                 # one real explanation of the top finding
 ```
 
-The endpoint and model id above follow Meta's Model API documentation (dev.meta.ai) as
-found during the hackathon. The live check tells you if your account uses something
-different; then set `MODEL_API_BASE_URL` or `MODEL_NAME`.
+The endpoint and model id above follow Meta's Model API documentation (dev.meta.ai) and
+were confirmed with a live call during the hackathon. If your account uses something
+different, the live check will tell you; then set `MODEL_API_BASE_URL` or `MODEL_NAME`.
 
 **Credit safety.** Nothing calls the model automatically. A call happens only when you press
 *Generate explanation*. Answers are cached per finding, and the server allows at most 6 AI
@@ -336,9 +336,10 @@ It is the top-ranked candidate in the simulator.
 - **AI explanations** can still be wrong or incomplete even after validation. They are
   labelled, and their facts should be checked against the verified evidence on the same
   page.
-- **Live Meta API access was not verified in the development environment**, whose network
-  policy blocked Meta's API hosts. All AI behaviour is tested with mocked responses. Use
-  `scripts/live_ai_check.py` to confirm against your own account.
+- **The automated tests do not call the live API.** They use mocked responses, so they need
+  no key. A live connection to `muse-spark-1.3` at `https://api.meta.ai/v1` was confirmed
+  with `scripts/live_ai_check.py` (PASS) on 30 Oct 2026. The model's wording varies between
+  runs, and availability depends on your account's access and credits.
 - This is a hackathon prototype, **not a production security product**.
 
 ## Future work
