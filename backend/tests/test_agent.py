@@ -188,3 +188,22 @@ def test_wrong_key_is_explained_to_the_model_and_corrected(demo):
     assert 'missing \\"op\\"' in t.seen[1]["messages"][-1]["content"]  # the reason reached the model
     assert result(events)["outcome"] == "verified"
     assert '"op": "remove_statement"' in t.seen[0]["messages"][0]["content"]  # example in the agent prompt
+
+
+def test_reroute_is_reported_to_the_model(demo):
+    data, analysis, finding = demo
+    import copy
+    data = copy.deepcopy(data)
+    data["policies"].append({"id": "policy:legacy-export", "name": "legacy-export", "statements": [
+        {"sid": "OldExport", "effect": "Allow", "actions": ["s3:GetObject"], "resources": ["res:s3-customer-pii"]}]})
+    next(u for u in data["users"] if u["id"] == "user:jordan.reyes")["policies"].append("policy:legacy-export")
+    t = scripted(reply("Remove the wildcard.", [REMOVE_WILDCARD]),
+                 reply("Also remove the legacy export.", [REMOVE_WILDCARD,
+                       {"op": "remove_statement", "policy": "policy:legacy-export", "sid": "OldExport"}], done=True))
+    events = list(run_fix_agent(data, analyze(data), next(f for f in analyze(data)["findings"] if f["id"] == SIGNATURE_PATH),
+                                AISettings(api_key=FAKE_KEY), t))
+    first = rounds(events)[0]["verification"]
+    assert first["target_path_broken"] is False
+    assert first["target_rerouted"] == {"route": ["Jordan Reyes", "customer-pii"], "level": "read", "level_before": "admin"}
+    assert "target_rerouted" in t.seen[1]["messages"][-1]["content"]  # the model is told how it is still reachable
+    assert result(events)["outcome"] == "verified"

@@ -38,8 +38,13 @@ function highlightOf(analysis: Analysis) {
   return { nodes, edges };
 }
 
-function PathList({ title, paths, tone, empty }: { title: string; paths: PathFinding[]; tone: "safe" | "risk" | "new"; empty: string }) {
+function PathList({ title, paths, tone, empty, before }: {
+  title: string; paths: PathFinding[]; tone: "safe" | "risk" | "new"; empty: string;
+  /** For paths still open after the change: how each looked before, to show reroutes. */
+  before?: Map<string, PathFinding>;
+}) {
   const { index } = useApp();
+  const route = (p: PathFinding) => p.path.map((id) => index?.name(id) ?? id).join(" → ");
   return (
     <section className={`card pathlist pathlist-${tone}`}>
       <div className="card-head">
@@ -53,7 +58,17 @@ function PathList({ title, paths, tone, empty }: { title: string; paths: PathFin
               {tone === "safe" ? <Check size={16} aria-hidden className="ic-safe" /> : <ShieldAlert size={16} aria-hidden className="ic-risk" />}
               <div>
                 <span className="pathlist-title">{p.title}</span>
-                <span className="muted small">{p.path.map((id) => index?.name(id) ?? id).join(" → ")}</span>
+                {(() => {
+                  const was = before?.get(p.key);
+                  if (!was || was.path.join() === p.path.join()) return <span className="muted small">{route(p)}</span>;
+                  return (
+                    <span className="small reroute-detail">
+                      <Chip tone="risk">Rerouted{was.level !== p.level ? `: ${was.level} → ${p.level}` : ""}</Chip>
+                      <span className="muted">Was: {route(was)}</span>
+                      <span>Now: {route(p)}</span>
+                    </span>
+                  );
+                })()}
               </div>
               <SeverityBadge severity={p.severity} score={p.score} />
             </li>
@@ -83,12 +98,15 @@ function Results({ result }: { result: SimulationResult }) {
         </Notice>
       ) : d.broken_paths.length > 0 ? (
         <Notice tone="success" title={`${d.broken_paths.length} attack path${d.broken_paths.length > 1 ? "s" : ""} confirmed broken`}>
-          Confirmed by re-running the engine on the changed dataset: these paths no longer exist. {d.remaining_paths.length > 0
+          Confirmed by re-running the engine on the changed dataset: these paths no longer exist.{" "}
+          {d.changed_paths.length > 0 && `${d.changed_paths.length} path${d.changed_paths.length > 1 ? "s were" : " was"} only rerouted, not broken. `}
+          {d.remaining_paths.length > 0
             ? `${d.remaining_paths.length} other path${d.remaining_paths.length > 1 ? "s" : ""} remain open.` : "No attack paths remain."}
         </Notice>
       ) : (
         <Notice tone="warning" title="No attack path was broken">
-          The recomputed graph still contains every path. Try a different change.
+          The recomputed graph still contains every path{d.changed_paths.length > 0 ? `; ${d.changed_paths.length} only switched to another route` : ""}.
+          Try a different change.
         </Notice>
       )}
 
@@ -116,7 +134,8 @@ function Results({ result }: { result: SimulationResult }) {
 
       <div className="stack">
         <PathList title="Broken" paths={d.broken_paths} tone="safe" empty="No path was broken." />
-        <PathList title="Still open" paths={d.remaining_paths} tone="risk" empty="No attack paths remain." />
+        <PathList title="Still open" paths={d.remaining_paths} tone="risk" empty="No attack paths remain."
+          before={new Map(pathsOf(result.before).map((p) => [p.key, p]))} />
         <PathList title="New" paths={d.new_paths} tone="new" empty="No new paths appeared." />
       </div>
 

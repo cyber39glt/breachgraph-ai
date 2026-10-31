@@ -375,6 +375,15 @@ main { outline: none; }
 .raw summary { padding: 0; }
 .raw[open] summary { margin-bottom: var(--s-3); }
 
+/* ---- Real-data consent and reroutes ------------------------------------------------- */
+.consent { display: flex; gap: var(--s-3); align-items: flex-start; padding: var(--s-3) var(--s-4); margin: var(--s-3) 0; border-radius: var(--radius); background: var(--sev-medium-tint); border: 1px solid var(--sev-medium-rule); }
+.consent > svg { color: var(--sev-medium); flex: none; margin-top: 2px; }
+.consent p { margin: var(--s-1) 0 var(--s-2); }
+.consent-check { display: flex; gap: var(--s-2); align-items: flex-start; font-size: var(--text-sm); font-weight: 600; cursor: pointer; }
+.consent-check input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--glt-forest); flex: none; }
+.reroute { margin: var(--s-2) 0 0; color: var(--sev-high); font-weight: 500; }
+.reroute-detail { display: grid; gap: 2px; justify-items: start; margin-top: var(--s-1); }
+
 /* ---- AWS import ------------------------------------------------------------------------ */
 .aws-import h2 { display: inline-flex; align-items: center; gap: var(--s-2); }
 .aws-steps { padding-left: 1.2em; display: grid; gap: var(--s-2); margin: 0 0 var(--s-4); }

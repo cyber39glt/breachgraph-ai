@@ -60,6 +60,11 @@ interface AppState {
   importReport: AwsImportReport | null;
   setImportReport: (r: AwsImportReport | null) => void;
   agentRuns: Record<string, AgentState>;
+  /** True when the loaded dataset is not marked synthetic (real data). */
+  realData: boolean;
+  /** The user agreed to send real findings to the Meta Model API (reset when the dataset changes). */
+  aiConsent: boolean;
+  setAiConsent: (v: boolean) => void;
   runAgent: (findingId: string) => Promise<void>;
   /** Changes queued for the simulator (e.g. from an AI suggestion or a candidate). */
   queued: Change[] | null;
@@ -79,6 +84,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [queued, setQueued] = useState<Change[] | null>(null);
   const [agentRuns, setAgentRuns] = useState<Record<string, AgentState>>({});
   const [importReport, setImportReport] = useState<AwsImportReport | null>(null);
+  const [aiConsent, setAiConsent] = useState(false);
+  const realData = !!analysis && analysis.dataset.synthetic !== true;
+  const share = realData && aiConsent;
 
   const run = useCallback(async (source: Dataset | null) => {
     setLoading(true);
@@ -93,6 +101,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setUploaded(source);
       setExplanations({});
       setAgentRuns({});
+      setAiConsent(false);
     } catch (e) {
       const err = e instanceof ApiError ? e : new ApiError("unknown", String(e), 0);
       // A rejected upload keeps the current dataset on screen; the caller shows the error.
@@ -110,13 +119,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const explain = useCallback(async (findingId: string) => {
     setExplanations((s) => ({ ...s, [findingId]: { status: "loading" } }));
     try {
-      const result = await api.explain(uploaded, findingId);
+      const result = await api.explain(uploaded, findingId, share);
       setExplanations((s) => ({ ...s, [findingId]: { status: "done", result } }));
     } catch (e) {
       const error = e instanceof ApiError ? e : new ApiError("unknown", String(e), 0);
       setExplanations((s) => ({ ...s, [findingId]: { status: "error", error } }));
     }
-  }, [uploaded]);
+  }, [uploaded, share]);
 
   const runAgent = useCallback(async (findingId: string) => {
     const update = (fn: (a: AgentState) => AgentState) =>
@@ -133,13 +142,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const { type: _t, ...result } = event;
           update((a) => ({ ...a, status: a.error ? "error" : "done", result }));
         }
-      });
+      }, share);
       update((a) => (a.status === "running" ? { ...a, status: a.error ? "error" : "done" } : a));
     } catch (e) {
       const error = e instanceof ApiError ? e : new ApiError("unknown", String(e), 0);
       update((a) => ({ ...a, status: "error", error }));
     }
-  }, [uploaded]);
+  }, [uploaded, share]);
 
   const value = useMemo<AppState>(() => ({
     uploaded, dataset, analysis, loading, error,
@@ -152,14 +161,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadUpload: (d) => run(d),
     explanations, explain,
     importReport, setImportReport,
-    agentRuns, runAgent,
+    agentRuns, runAgent, realData, aiConsent, setAiConsent,
     queued,
     queueSimulation: (changes) => {
       setQueued(changes);
       navigate("simulate");
     },
     clearQueue: () => setQueued(null),
-  }), [uploaded, dataset, analysis, loading, error, run, explanations, explain, importReport, agentRuns, runAgent, queued]);
+  }), [uploaded, dataset, analysis, loading, error, run, explanations, explain, importReport, agentRuns, runAgent, realData, aiConsent, queued]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

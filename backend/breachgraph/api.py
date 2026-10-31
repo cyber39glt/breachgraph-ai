@@ -74,6 +74,9 @@ class SimulateRequest(DatasetRequest):
 
 class ExplainRequest(DatasetRequest):
     finding_id: str = Field(pattern=r"^PATH-[0-9A-F]{8}$")
+    share_real_data: bool = Field(default=False, description=(
+        "Required for datasets not marked synthetic: confirms the user agreed to send this finding's "
+        "evidence (identity names, policies, resource ARNs) to the Meta Model API."))
 
 
 class AgentRequest(ExplainRequest):
@@ -181,6 +184,15 @@ def _take_slot(calls: deque[float], limit: int, what: str) -> None:
         calls.append(now)
 
 
+def _require_consent(req: ExplainRequest, data: dict[str, Any]) -> None:
+    """Real (non-synthetic) data is sent to the Meta Model API only with explicit consent."""
+    if req.dataset is not None and not (data.get("metadata") or {}).get("synthetic") and not req.share_real_data:
+        raise AIError("consent_required",
+                      "This dataset is not marked synthetic. Confirm that this finding's evidence (identity names, "
+                      "policies and resource ARNs, which can include the account ID) may be sent to the Meta "
+                      "Model API.", 400)
+
+
 def _ai_status() -> dict[str, Any]:
     s = AISettings.from_env()
     return {"provider": PROVIDER, "configured": s.configured, "model": s.model}
@@ -281,6 +293,7 @@ def explain_endpoint(req: ExplainRequest) -> dict[str, Any]:
     data = _dataset(req)
     analysis = _analysis(data)
     finding = _path_finding(analysis, req.finding_id)
+    _require_consent(req, data)
     settings = AISettings.from_env()
     key = f"{_fingerprint(data)}:{finding['id']}:{settings.model}"
     if settings.configured and key in _explain_cache:
@@ -310,6 +323,7 @@ def agent_endpoint(req: AgentRequest):
     data = _dataset(req)
     analysis = _analysis(data)
     finding = _path_finding(analysis, req.finding_id)
+    _require_consent(req, data)
     settings = AISettings.from_env()
     if not settings.configured:
         raise AIError("not_configured", "AI is off: MODEL_API_KEY is not set on the server.", 503)

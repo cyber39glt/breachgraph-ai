@@ -326,3 +326,58 @@ describe("large accounts", () => {
     expect(screen.getAllByText(/run to measure/).length).toBeGreaterThan(0);
   });
 });
+
+describe("real data and reroutes", () => {
+  const realAnalysis = { ...analyzeFixture, ai: { ...analyzeFixture.ai, configured: true },
+    dataset: { ...analyzeFixture.dataset, synthetic: false, name: "Production account" } };
+
+  it("asks for consent before any AI call on real data, and sends the consent flag", async () => {
+    routes["POST /api/analyze"] = ok(realAnalysis);
+    routes["POST /api/explain"] = () => ({ status: 502, json: { error: "timeout", message: "slow" } });
+    await open(`#/investigate/${SIGNATURE}`);
+    expect(screen.getAllByText("This is real data, not synthetic").length).toBe(2); // explanation + Fix Agent
+    expect(screen.getByRole("button", { name: "Generate explanation" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Run Fix Agent" })).toBeDisabled();
+    await userEvent.click(screen.getAllByLabelText(/I am authorised to share this evidence/)[0]);
+    expect(screen.getByRole("button", { name: "Run Fix Agent" })).toBeEnabled(); // one consent covers both
+    await userEvent.click(screen.getByRole("button", { name: "Generate explanation" }));
+    await screen.findByText("No explanation was generated");
+    expect(calls.find((c) => c.url === "POST /api/explain")?.body).toEqual({ finding_id: SIGNATURE, share_real_data: true });
+  });
+
+  it("shows no consent box for the synthetic demo", async () => {
+    routes["POST /api/analyze"] = ok(withAI(true));
+    await open(`#/investigate/${SIGNATURE}`);
+    expect(screen.queryByText("This is real data, not synthetic")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Generate explanation" })).toBeEnabled();
+  });
+
+  it("explains a path that was rerouted rather than broken", async () => {
+    const was = simulateFixture.diff.broken_paths.find((p) => p.key === "user:jordan.reyes->res:s3-customer-pii")!;
+    const now = { ...was, level: "read", path: ["user:jordan.reyes", "res:s3-customer-pii"] };
+    routes["POST /api/simulate"] = ok({ ...simulateFixture, diff: { ...simulateFixture.diff,
+      broken_paths: simulateFixture.diff.broken_paths.filter((p) => p.key !== was.key),
+      remaining_paths: [...simulateFixture.diff.remaining_paths, now], changed_paths: [was.key] } });
+    await open("#/simulate");
+    await userEvent.click(screen.getAllByRole("checkbox")[0]);
+    await userEvent.click(screen.getByRole("button", { name: /Run simulation/ }));
+    expect(await screen.findByText("Rerouted: admin → read")).toBeInTheDocument();
+    expect(screen.getByText(/1 path was only rerouted, not broken/)).toBeInTheDocument();
+    expect(screen.getByText("Now: Jordan Reyes → customer-pii")).toBeInTheDocument();
+  });
+
+  it("tells the user when the agent's target is still reachable another way", async () => {
+    routes["POST /api/analyze"] = ok(withAI(true));
+    routes["POST /api/agent/fix"] = () => ({ status: 200, ndjson: [
+      { type: "round", round: 1, analysis: "Remove the wildcard.", changes: [{ op: "remove_statement", policy: "policy:x", sid: "y" }],
+        rejected: [], model_done: false, verification: { valid: true, target_path_broken: false, requirements_met: false,
+          target_rerouted: { route: ["Jordan Reyes", "customer-pii"], level: "read", level_before: "admin" },
+          broken_paths: [], new_paths: [], other_access_removed: [], risk_before: 516, risk_after: 480 } },
+      { type: "result", finding_id: SIGNATURE, provider: "Meta Model API", model: "muse-spark-1.3", outcome: "not_found",
+        best_round: null, best_changes: [], stopped_reason: "max_rounds", model_calls: 1 },
+    ] });
+    await open(`#/investigate/${SIGNATURE}`);
+    await userEvent.click(screen.getByRole("button", { name: "Run Fix Agent" }));
+    expect(await screen.findByText(/Still reachable by another route \(admin → read\)/)).toBeInTheDocument();
+  });
+});

@@ -212,6 +212,8 @@ export interface AgentVerification {
   valid: boolean;
   error?: string;
   target_path_broken?: boolean;
+  /** When the target is still reachable by another route after the change */
+  target_rerouted?: { route: string[]; level: Level; level_before: Level } | null;
   requirements_met?: boolean;
   broken_paths?: Array<{ id: string; title: string }>;
   still_open_paths?: Array<{ id: string; title: string }>;

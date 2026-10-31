@@ -80,10 +80,12 @@ export const api = {
   analyze: (dataset: Dataset | null) => request<AnalyzeResponse>("/api/analyze", withDataset(dataset)),
   simulate: (dataset: Dataset | null, changes: Change[]) =>
     request<SimulationResult>("/api/simulate", { ...withDataset(dataset), changes }),
-  explain: (dataset: Dataset | null, findingId: string) =>
-    request<Explanation>("/api/explain", { ...withDataset(dataset), finding_id: findingId }),
+  explain: (dataset: Dataset | null, findingId: string, shareRealData = false) =>
+    request<Explanation>("/api/explain", { ...withDataset(dataset), finding_id: findingId,
+      ...(shareRealData ? { share_real_data: true } : {}) }),
   awsSample: () => request<AwsExport>("/api/demo/aws-sample"),
   importAws: (files: AwsExport) => request<{ dataset: Dataset; report: AwsImportReport }>("/api/import/aws", files),
-  fixAgent: (dataset: Dataset | null, findingId: string, onEvent: (e: AgentEvent) => void) =>
-    stream("/api/agent/fix", { ...withDataset(dataset), finding_id: findingId }, onEvent),
+  fixAgent: (dataset: Dataset | null, findingId: string, onEvent: (e: AgentEvent) => void, shareRealData = false) =>
+    stream("/api/agent/fix", { ...withDataset(dataset), finding_id: findingId,
+      ...(shareRealData ? { share_real_data: true } : {}) }, onEvent),
 };

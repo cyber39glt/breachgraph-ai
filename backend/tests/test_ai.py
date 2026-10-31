@@ -190,3 +190,34 @@ def test_explanation_carries_rejection_reason():
 
 def test_prompt_shows_the_exact_change_format():
     assert '"op": "remove_statement"' in ai.SYSTEM_PROMPT
+
+
+def _real_dataset(client):
+    data = client.get("/api/demo/dataset").json()
+    data["metadata"]["synthetic"] = False
+    return data
+
+
+@pytest.mark.parametrize("path", ["/api/explain", "/api/agent/fix"])
+def test_real_data_needs_consent_before_reaching_meta(client, with_key, monkeypatch, path):
+    transport = model_reply(GOOD_EXPLANATION)
+    monkeypatch.setattr(api, "ai_transport", transport)
+    r = client.post(path, json={"dataset": _real_dataset(client), "finding_id": SIGNATURE_PATH})
+    assert r.status_code == 400 and r.json()["error"] == "consent_required"
+    assert "account ID" in r.json()["message"]
+    assert transport.seen == []  # nothing was sent to the model
+
+
+def test_consent_allows_real_data(client, with_key, monkeypatch):
+    monkeypatch.setattr(api, "ai_transport", model_reply(GOOD_EXPLANATION))
+    r = client.post("/api/explain", json={"dataset": _real_dataset(client), "finding_id": SIGNATURE_PATH,
+                                          "share_real_data": True})
+    assert r.status_code == 200 and r.json()["ai_generated"] is True
+
+
+def test_synthetic_data_needs_no_consent(client, with_key, monkeypatch):
+    monkeypatch.setattr(api, "ai_transport", model_reply(GOOD_EXPLANATION))
+    demo = client.get("/api/demo/dataset").json()
+    assert client.post("/api/explain", json={"finding_id": SIGNATURE_PATH}).status_code == 200
+    api._explain_cache.clear()
+    assert client.post("/api/explain", json={"dataset": demo, "finding_id": SIGNATURE_PATH}).status_code == 200

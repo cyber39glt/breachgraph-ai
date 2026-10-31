@@ -105,9 +105,17 @@ def evaluate(data: dict[str, Any], finding: dict[str, Any], changes: list[dict[s
                    "resource": names.get(a["resource"], a["resource"]), "level": a["level"],
                    "via_roles": [names.get(r, r) for r in a["roles"]]}
                   for a in diff["collateral_access_removed"]]
+    rerouted = None
+    if not target_broken:
+        # The target is still reachable. Say how, so the model can aim at the route that remains.
+        now = next((p for p in diff["remaining_paths"] if p["key"] == finding["key"]), None)
+        if now and now["path"] != finding["path"]:
+            rerouted = {"route": [names.get(n, n) for n in now["path"]], "level": now["level"],
+                        "level_before": finding["level"]}
     return {
         "valid": True,
         "target_path_broken": target_broken,
+        "target_rerouted": rerouted,
         "broken_paths": [{"id": p["id"], "title": p["title"]} for p in diff["broken_paths"]],
         "still_open_paths": [{"id": p["id"], "title": p["title"]} for p in diff["remaining_paths"]],
         "new_paths": [{"id": p["id"], "title": p["title"]} for p in diff["new_paths"]],

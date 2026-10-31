@@ -1,6 +1,7 @@
 import { FlaskConical, RotateCcw, Sparkles, Waypoints } from "lucide-react";
 import { useMemo } from "react";
 import { FixAgentPanel } from "../components/FixAgentPanel";
+import { RealDataConsent } from "../components/RealDataConsent";
 import { GraphView } from "../components/GraphView";
 import { AILabel, Chip, CodeBlock, Empty, Entity, Eyebrow, LevelTag, Notice, PageHeader, SeverityBadge, Spinner, VerifiedLabel } from "../components/ui";
 import { edgeId, isPath, pathElements, pathsOf, RELATION_LABEL } from "../lookup";
@@ -17,6 +18,7 @@ const AI_ERROR_HELP: Record<string, string> = {
   timeout: "The model took too long. Try again, or raise MODEL_TIMEOUT_SECONDS.",
   network_error: "The server could not reach the Meta Model API. Check your network or proxy.",
   malformed_response: "The model reply failed validation and was discarded. Trying again usually helps.",
+  consent_required: "Tick the box above to confirm this evidence may be sent to the Meta Model API.",
 };
 
 function PathPicker() {
@@ -196,9 +198,10 @@ function AIResult({ result, finding }: { result: Explanation; finding: PathFindi
 }
 
 function AIPanel({ finding }: { finding: PathFinding }) {
-  const { analysis, explanations, explain } = useApp();
+  const { analysis, explanations, explain, realData, aiConsent } = useApp();
   const state: ExplainState | undefined = explanations[finding.id];
   const ai = analysis?.ai;
+  const blocked = !ai?.configured || (realData && !aiConsent);
   return (
     <section className="card ai-panel" aria-labelledby="ai-title">
       <div className="card-head">
@@ -212,7 +215,8 @@ function AIPanel({ finding }: { finding: PathFinding }) {
           {ai && !ai.configured && (
             <Notice tone="info" title="AI explanations are off">{AI_ERROR_HELP.not_configured}</Notice>
           )}
-          <button type="button" className="btn btn-primary" disabled={!ai?.configured} onClick={() => explain(finding.id)}>
+          {ai?.configured && <RealDataConsent />}
+          <button type="button" className="btn btn-primary" disabled={blocked} onClick={() => explain(finding.id)}>
             <Sparkles size={16} aria-hidden /> Generate explanation
           </button>
           {ai?.configured && <p className="fine">Uses your Meta Model API credits ({ai.model}). Nothing is sent automatically.</p>}

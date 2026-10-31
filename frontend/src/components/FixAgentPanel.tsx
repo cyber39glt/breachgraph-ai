@@ -1,6 +1,7 @@
 import { Bot, FlaskConical, RotateCcw } from "lucide-react";
 import { useApp } from "../state";
 import type { AgentRound, PathFinding } from "../types";
+import { RealDataConsent } from "./RealDataConsent";
 import { AILabel, Chip, CodeBlock, Notice, Spinner, VerifiedLabel } from "./ui";
 
 const MAX_ROUNDS = 4;
@@ -27,6 +28,10 @@ function Verdict({ round, findingId }: { round: AgentRound; findingId: string })
         <Chip>{v.other_access_removed?.length ?? 0} other access removed</Chip>
         <Chip>Risk {v.risk_before} → {v.risk_after}</Chip>
       </p>
+      {v.target_rerouted && (
+        <p className="small reroute">Still reachable by another route ({v.target_rerouted.level_before} → {v.target_rerouted.level}):{" "}
+          {v.target_rerouted.route.join(" → ")}</p>
+      )}
       {(v.other_access_removed?.length ?? 0) > 0 && (
         <ul className="agent-collateral small muted">
           {v.other_access_removed!.map((a) => (
@@ -63,10 +68,11 @@ function Round({ round, findingId, best }: { round: AgentRound; findingId: strin
 }
 
 export function FixAgentPanel({ finding }: { finding: PathFinding }) {
-  const { analysis, agentRuns, runAgent, queueSimulation } = useApp();
+  const { analysis, agentRuns, runAgent, queueSimulation, realData, aiConsent } = useApp();
   const run = agentRuns[finding.id];
   const ai = analysis?.ai;
   const result = run?.result;
+  const blocked = !ai?.configured || (realData && !aiConsent);
   return (
     <section className="card ai-panel fix-agent" aria-labelledby="agent-title">
       <div className="card-head">
@@ -78,7 +84,8 @@ export function FixAgentPanel({ finding }: { finding: PathFinding }) {
 
       {!run && (
         <>
-          <button type="button" className="btn btn-primary" disabled={!ai?.configured} onClick={() => runAgent(finding.id)}>
+          {ai?.configured && <RealDataConsent />}
+          <button type="button" className="btn btn-primary" disabled={blocked} onClick={() => runAgent(finding.id)}>
             <Bot size={16} aria-hidden /> Run Fix Agent
           </button>
           <p className="fine">{ai?.configured
@@ -124,7 +131,7 @@ export function FixAgentPanel({ finding }: { finding: PathFinding }) {
       )}
 
       {run && run.status !== "running" && (
-        <button type="button" className="btn btn-ghost" onClick={() => runAgent(finding.id)} disabled={!ai?.configured}>
+        <button type="button" className="btn btn-ghost" onClick={() => runAgent(finding.id)} disabled={blocked}>
           <RotateCcw size={15} aria-hidden /> Run again
         </button>
       )}
