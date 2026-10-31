@@ -35,7 +35,7 @@ permission, is the path gone, and what else breaks?"*
 | | |
 |---|---|
 | **Attack-path analysis** | A deterministic Python engine follows group memberships and role assumptions (with AWS-style trust and explicit-deny rules) to find every route from an identity to a high or critical resource. |
-| **Evidence for every edge** | Each step cites the exact policy statement or trust policy that allows it. Select any node or edge in the graph to see it. |
+| **Evidence for every edge** | Each step cites the exact policy statement or trust policy that allows it. Select any node or edge in the graph to see it. Identities, groups, roles and resources are nodes; permissions are the labelled edges between them (e.g. `sts:AssumeRole`, `s3:* · admin`). |
 | **Transparent severity** | Scores are a visible sum of named factors (sensitivity, access level, MFA, external identity, inactivity, role escalation), not a black box. |
 | **Meta AI explanations** | On request, Meta AI explains one verified finding: the risk, the likely impact, which statements are facts and which are assumptions, and least-privilege fixes. |
 | **AI proposes, engine verifies** | Every fix the AI suggests is checked against the simulator before it is shown. You see whether it really breaks the path. |
@@ -46,8 +46,8 @@ permission, is the path gone, and what else breaks?"*
 
 ## Screenshots
 
-All screenshots are of the running application with the bundled synthetic dataset
-(captured with `frontend/e2e/screens.mjs`).
+All screenshots are of the running application with the bundled synthetic dataset.
+Screenshots 01–09 were captured with `frontend/e2e/screens.mjs`.
 
 | Attack-path explorer | Investigation |
 |---|---|
@@ -61,8 +61,14 @@ All screenshots are of the running application with the bundled synthetic datase
 |---|
 | ![AWS export import with its report](docs/screenshots/09-aws-import.png) |
 
-The AI panel shows "AI explanations are off" because the screenshots were taken without an
-API key. No AI output appears in the screenshots.
+**Meta AI, live.** These three were captured from real runs of `muse-spark-1.3` on the
+synthetic demo dataset. The text is the model's actual output, unedited.
+
+| AI explanation | AI fixes, verified by the simulator | Fix Agent |
+|---|---|---|
+| ![AI explanation with facts and assumptions separated](docs/screenshots/10-ai-explanation.png) | ![AI-suggested fixes with simulator verdicts](docs/screenshots/11-ai-fixes-verified.png) | ![Fix Agent round with proposal and simulator measurement](docs/screenshots/12-fix-agent.png) |
+
+The other screenshots were captured without an API key, so their AI panels show "off".
 
 ---
 
@@ -82,12 +88,12 @@ cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-pytest -q                                    # expect: 120 passed
+pytest -q                                    # expect: 125 passed
 
 # 2. Dashboard (build once; the API serves it)
 cd ../frontend
 npm ci
-npm test                                     # expect: 21 passed
+npm test                                     # expect: 25 passed
 npm run build
 
 # 3. Run
@@ -263,25 +269,28 @@ flowchart LR
     UI[React dashboard<br/>GreenLanTech design system]
   end
   subgraph Server["Python API (FastAPI, 127.0.0.1)"]
-    API[REST API<br/>validation · limits · CSP]
+    API[REST API<br/>validation · limits · CSP<br/>consent for real data]
+    IMP[AWS importer<br/>offline, no credentials]
     ENG[Deterministic engine<br/>sessions · trust · deny · BFS]
     SIM[Simulator<br/>apply change to a copy, re-run]
-    REM[Remediation candidates<br/>each measured by simulator]
-    AI[AI module<br/>minimal evidence · validation]
+    REM[Remediation candidates<br/>measured by simulator]
+    AI[AI explanation<br/>minimal evidence · validation]
+    AG[Fix Agent<br/>propose → verify → feedback]
   end
-  DATA[(Synthetic dataset<br/>JSON)]
-  META[[Meta Model API]]
+  DATA[(Synthetic demo<br/>or uploaded JSON)]
+  AWS[(AWS IAM export files<br/>exported by the owner)]
+  META[[Meta Model API<br/>Muse Spark]]
 
   UI -- JSON over /api --> API
-  API --> ENG
-  API --> SIM
-  API --> REM
-  API --> AI
+  AWS --> IMP --> ENG
   DATA --> ENG
+  API --> ENG
+  API --> REM --> SIM
   SIM --> ENG
-  REM --> SIM
-  AI -- "one finding's evidence" --> META
-  AI -- "AI-suggested changes" --> SIM
+  API --> AI -- "one finding's evidence" --> META
+  AI -- "suggested changes" --> SIM
+  API --> AG -- "evidence + measured feedback" --> META
+  AG -- "each proposal" --> SIM
 ```
 
 ### The risk engine (`backend/breachgraph/engine.py`)
@@ -342,7 +351,11 @@ Changes (`remove_statement`, `remove_group_member`, `detach_policy`,
 `set_statement_actions`, `set_statement_resources`, `set_role_trust`) are applied to a deep
 copy. The copy is re-validated and fully re-analysed. A path is reported as **broken** only
 if it is absent from the recomputed result. The simulator also reports new paths and *other
-access the change removes*, so you can spot collateral damage to legitimate work.
+access the change removes*, so you can spot collateral damage to legitimate work. When a
+change only **reroutes** an attack (the same identity still reaches the same resource another
+way), the path stays "still open" and is marked *Rerouted*, with the old and new route and any
+change in access level. The engine keeps the strongest route per identity and resource, so
+other routes appear once a change removes the strongest one.
 
 ---
 
@@ -390,8 +403,8 @@ It is the top-ranked candidate in the simulator.
 
 | Suite | Command | Result (this commit) |
 |---|---|---|
-| Engine, simulator, API, AI integration, Fix Agent, AWS importer | `cd backend && pytest -q` | 120 passed |
-| Dashboard components and workflows | `cd frontend && npm test` | 21 passed |
+| Engine, simulator, API, AI integration, Fix Agent, AWS importer | `cd backend && pytest -q` | 125 passed |
+| Dashboard components and workflows | `cd frontend && npm test` | 25 passed |
 | Type check and production build | `cd frontend && npm run build` | passes |
 | Live browser check (console errors, CSP, screenshots) | `node frontend/e2e/screens.mjs <outdir>` with the API running | no errors |
 
@@ -412,6 +425,10 @@ It is the top-ranked candidate in the simulator.
   cloud credentials. It analyses exported snapshots (synthetic, or your own AWS export,
   processed in memory and not stored). There is no code that could change real permissions;
   the simulator works on an in-memory copy.
+- **Real data and Meta AI.** For any dataset not marked synthetic, the API refuses to send
+  evidence to the Meta Model API unless the request confirms consent, and the dashboard shows
+  exactly what would be shared (identity names, policies, resource ARNs including the account
+  ID) before you can tick it. Only the one finding's evidence is ever sent.
 - **Secrets.** The API key lives only in the server environment or a git-ignored `.env`. It
   is never sent to the browser, returned in responses, logged or included in errors.
 - **Input validation.** Request bodies are capped at 5 MB (20 MB for AWS imports). Datasets are size-limited and
@@ -484,7 +501,13 @@ created on 27 Oct. Commits, in Eastern Time:
 | Tue 27 Oct, 05:59 | `481c96b` | REST API, remediation candidates, Meta Model API integration |
 | Tue 27 Oct, 06:14 | `ba87b08` | GreenLanTech dashboard: graph explorer, investigation, simulator |
 | Tue 27 Oct, 06:17 | `92b698a` | Documentation, demo script, CI |
-| Wed 28 Oct onward | later commits | Licensing, live Meta API confirmation, troubleshooting, further features |
+| Wed 28 Oct, 11:21 | `f19fc84` | Licence, NOTICE, font licences |
+| Fri 30 Oct, 04:43 – 08:58 | `f9a2e22`, `c9ef4e4`, `f4269a9` | Live Meta API confirmation, troubleshooting, hackathon documentation |
+| Fri 30 Oct, 09:37 | `b3fbeac` | **Fix Agent**: Muse Spark proposes fixes, the simulator verifies them |
+| Fri 30 Oct, 10:15 | `d44ba15` | Exact change format and precise rejection reasons (after the first live agent run) |
+| Fri 30 Oct, 12:02 | `e24825e` | **Offline AWS import**, engine performance and large-account safeguards |
+| Sat 31 Oct, 09:39 | `0e1a7cd` | Consent before real data reaches Meta AI; rerouted attack paths shown |
+| Later | see `git log` | Documentation and demo updates |
 
 Third-party open-source libraries (listed in [NOTICE](NOTICE)) are used unmodified as
 dependencies. The GreenLanTech brand belongs to the author.

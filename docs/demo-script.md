@@ -23,7 +23,8 @@ Demo the **running product**, not slides. Total ≈ 3:00.
 > chains, proves them, and lets you test the fix before you touch production."
 
 Point at the metrics: **6 identities, 6 attack paths, 4 critical findings**, and the dataset
-chip: *"This is a fictional company, all synthetic data. Nothing connects to a real cloud."*
+chip: *"It works on a real AWS IAM export, imported offline, with no cloud connection and no
+credentials. Here it's a fictional company, so all the data is synthetic."*
 
 ## 0:20 – 0:50 · The risky chain (Highest-risk path card → Attack graph)
 
@@ -102,6 +103,7 @@ earlier. If you record the run itself, you may speed it up in editing, but label
 | Situation | What to do |
 |---|---|
 | AI call fails or times out | Show the error panel: *"It reports the real failure and never invents an answer."* Continue with the engine-ranked fixes. |
+| A judge asks "does it work on real accounts?" | Dataset page → **Try a sample AWS export**: AWS's real file formats, same attack paths. Be clear it was tested with synthetic exports. |
 | Fix Agent finds no verified fix | Show it: *"The agent didn't find one, and the app says so instead of pretending."* Use the engine-ranked fix. |
 | No API credits / key | The AI panel says "AI explanations are off"; demo everything else. |
 | Graph looks cramped | Use the **fit** button (top right of the graph). |
