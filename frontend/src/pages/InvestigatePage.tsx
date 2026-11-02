@@ -15,7 +15,7 @@ const AI_ERROR_HELP: Record<string, string> = {
   not_found: "Check MODEL_NAME and MODEL_API_BASE_URL against the models your account can use.",
   rate_limited: "Wait a minute, or check your remaining API credits.",
   local_rate_limited: "BreachGraph limits AI calls per minute to protect your credits.",
-  timeout: "The model took too long. Try again, or raise MODEL_TIMEOUT_SECONDS.",
+  timeout: "Meta's API was slow to answer. Try again; if it keeps happening, set MODEL_TIMEOUT_SECONDS higher (for example 180) and restart the server.",
   network_error: "The server could not reach the Meta Model API. Check your network or proxy.",
   malformed_response: "The model reply failed validation and was discarded. Trying again usually helps.",
   consent_required: "Tick the box above to confirm this evidence may be sent to the Meta Model API.",
@@ -222,7 +222,7 @@ function AIPanel({ finding }: { finding: PathFinding }) {
           {ai?.configured && <p className="fine">Uses your Meta Model API credits ({ai.model}). Nothing is sent automatically.</p>}
         </>
       )}
-      {state?.status === "loading" && <Spinner label="Asking Meta AI… this can take up to 30 seconds" />}
+      {state?.status === "loading" && <Spinner label="Asking Meta AI… this can take a minute or more when the API is busy" />}
       {state?.status === "error" && (
         <Notice tone="error" title="No explanation was generated" action={
           state.error.code !== "not_configured" && (

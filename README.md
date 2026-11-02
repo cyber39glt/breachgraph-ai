@@ -132,6 +132,7 @@ If PowerShell blocks `Activate.ps1`, run
 | `ImportError: DLL load failed while importing _pydantic_core` | A pre-release Python (for example `3.14.0a4`) is installed. Check with `python --version`; an `a`, `b` or `rc` in the version means a test build. Install a stable Python (3.12 or 3.13 are tested), then recreate the environment: `Remove-Item -Recurse -Force .venv`, `py -3.13 -m venv .venv`, and install again. |
 | PowerShell: "running scripts is disabled" | Run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` in that window, answer `Y`, then activate again. It affects only that window. |
 | Dashboard says **Meta AI · off** | The server did not see `MODEL_API_KEY`. Set it in the **same** terminal **before** starting `uvicorn`, or put it in `.env`, then restart the server and refresh the page. |
+| "The Meta Model API did not answer within N seconds" | Not a key problem: the key was accepted but the model was slow (it reasons before answering, and the API is busier near deadlines). Try again, or raise `MODEL_TIMEOUT_SECONDS` (e.g. `$env:MODEL_TIMEOUT_SECONDS = "180"` before starting the server). |
 | `live_ai_check.py` says `not_found` | Your account uses a different model id. Run `--list-models` and set `MODEL_NAME`. |
 
 ### Frontend development mode
@@ -160,7 +161,7 @@ environment variable. The browser never sees it.
 | `MODEL_API_KEY` | *(empty: AI off)* | Your Meta Model API key |
 | `MODEL_API_BASE_URL` | `https://api.meta.ai/v1` | API base URL |
 | `MODEL_NAME` | `muse-spark-1.3` | Model id |
-| `MODEL_TIMEOUT_SECONDS` | `30` | Request timeout |
+| `MODEL_TIMEOUT_SECONDS` | `90` | Seconds to wait for each model reply (max 300) |
 
 **Option A: a `.env` file (recommended).** Copy `.env.example` to `.env` in the project
 root and put your key after `MODEL_API_KEY=`. `.env` is git-ignored.

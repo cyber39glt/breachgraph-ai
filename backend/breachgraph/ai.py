@@ -34,7 +34,8 @@ log = logging.getLogger("breachgraph.ai")
 
 DEFAULT_BASE_URL = "https://api.meta.ai/v1"
 DEFAULT_MODEL = "muse-spark-1.3"
-DEFAULT_TIMEOUT_SECONDS = 30.0
+# Muse Spark reasons before answering, and replies can be slow when the API is busy.
+DEFAULT_TIMEOUT_SECONDS = 90.0
 PROVIDER = "Meta Model API"
 
 LIMITS = {"summary": 700, "impact": 900, "item": 400, "list": 8, "remediation": 4}
@@ -70,7 +71,7 @@ class AISettings:
             api_key=(os.environ.get("MODEL_API_KEY") or "").strip() or None,
             base_url=(os.environ.get("MODEL_API_BASE_URL") or DEFAULT_BASE_URL).rstrip("/"),
             model=(os.environ.get("MODEL_NAME") or DEFAULT_MODEL).strip(),
-            timeout=max(1.0, min(timeout, 120.0)),
+            timeout=max(1.0, min(timeout, 300.0)),
         )
 
     @property

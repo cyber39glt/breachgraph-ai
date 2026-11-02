@@ -91,7 +91,7 @@ Point, in order (numbers shown are for removing `AssumeAnyRole`; read the ones o
 
 ### Recording the agent honestly
 
-A full agent run can take 30 seconds to 2 minutes. Start it before you record, and keep the
+A full agent run can take from 30 seconds to several minutes when the API is busy. Start it before you record, and keep the
 browser tab open (reloading clears it). On camera, say it was run live by Muse Spark a moment
 earlier. If you record the run itself, you may speed it up in editing, but label it on screen
 (for example "sped up 4×"). Never edit or stage the model's output.
