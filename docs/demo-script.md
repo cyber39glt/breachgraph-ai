@@ -89,6 +89,12 @@ Point, in order (numbers shown are for removing `AssumeAnyRole`; read the ones o
 > and a simulator that verifies every one before anyone touches a permission. Built during
 > this hackathon, on synthetic data. Open source at github.com/cyber39glt/breachgraph-ai."
 
+### Closing screen (last 10 seconds)
+
+Open `docs/demo-assets/closing-screen.html` in Chrome and press **F11**. It is a 1920 × 1080
+animated end card (no internet needed). Record about 10 seconds from the moment it opens;
+press **R** to replay for another take. The GitHub link is set at the top of the file (`CONFIG`).
+
 ### Recording the agent honestly
 
 A full agent run can take from 30 seconds to several minutes when the API is busy. Start it before you record, and keep the
